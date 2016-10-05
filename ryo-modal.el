@@ -36,6 +36,9 @@ Major mode specific bindings will be bound to ryo-<major-mode>-map instead.")
 (defconst ryo-modal-default-cursor-color (face-attribute 'cursor :background)
   "Default color of cursor.")
 
+(defvar ryo-modal-global-mode-blacklist ()
+  "Modes excluded from `ryo-modal-global-mode'.")
+
 (defvar ryo-modal-bindings-list ()
   "A list of all the bindings in `ryo-modal-mode'.")
 
@@ -168,6 +171,16 @@ See `ryo-modal-key' for more information."
     (remove-hook 'post-command-hook #'ryo-modal--cursor-color-update)
     (set-cursor-color ryo-modal-default-cursor-color)
     (setq-local cursor-type (default-value 'cursor-type))))
+
+(defun ryo-modal--global-on-p ()
+  "If `ryo-modal-global-mode' should activate in a new buffer or not."
+  (unless (or (minibufferp)
+              (member major-mode ryo-modal-global-mode-blacklist))
+    (ryo-modal-mode 1)))
+
+(define-globalized-minor-mode ryo-modal-global-mode
+  ryo-modal-mode
+  ryo-modal--global-on-p)
 
 (defun ryo-modal--cursor-color-update ()
   "Set cursor color depending on if `ryo-modal-mode' is active or not."

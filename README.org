@@ -4,17 +4,16 @@
 
 * Usage
 
-You can use =M-x ryo-modal-mode= to activate =ryo-modal=, but without configuration nothing will happen. You need to add keybindings to it first; this can be done by =ryo-modal-key= (bind one key) or =ryo-modal-keys= (bind many keys at once).
+You can use =M-x ryo-modal-mode= or =M-x ryo-modal-global-mode= to activate =ryo-modal=, but without configuration nothing will happen. You need to add keybindings to it first; this can be done by =ryo-modal-key= (bind one key) or =ryo-modal-keys= (bind many keys at once).
 
 Here's a simple configuration, using [[https://github.com/jwiegley/use-package][use-package]]:
 
 #+BEGIN_SRC emacs-lisp
   (use-package ryo-modal
-    :commands ryo-modal-mode
-    :bind ("C-c SPC" . ryo-modal-mode)
+    :commands ryo-modal-global-mode
+    :bind ("C-c SPC" . ryo-modal-global-mode)
     :config
     (ryo-modal-keys
-     ("q" ryo-modal-mode)
      ("0" "M-0")
      ("1" "M-1")
      ("2" "M-2")
@@ -31,7 +30,9 @@ Here's a simple configuration, using [[https://github.com/jwiegley/use-package][
      ("l" forward-char)))
 #+END_SRC
 
-Now I can start =ryo-modal-mode= by pressing =C-c SPC=, and get vim-like =hjkl=-navigation and use digit arguments by pressing the number keys. Notice that other keys are unmodified, so pressing =r= would insert =r= into the buffer.
+Now I can toggle =ryo-modal-mode= (actually the globalized version) by pressing =C-c SPC=, and get vim-like =hjkl=-navigation and use digit arguments by pressing the number keys. Notice that other keys are unmodified, so pressing =r= would insert =r= into the buffer.
+
+If you do not want =ryo-modal= in all buffers, use =ryo-modal-mode= instead of the globalized version. You can also add modes to =ryo-modal-global-mode-blacklist= to exclude them from =ryo-modal-global-mode=.
 
 When defining keys the first argument of each binding is the key (will be wrapped inside =kbd=) and the second argument is the target; a command or a string representing a keypress that should be simulated. The rest of the arguments are keyword pairs, providing extra features. The following keywords exist:
 
@@ -59,8 +60,8 @@ If you want (some) special keybindings when the region is active, you can use [[
 
 #+BEGIN_SRC emacs-lisp
   (use-package ryo-modal
-    :commands ryo-modal-mode
-    :bind ("C-c SPC" . ryo-modal-mode)
+    :commands ryo-modal-global-mode
+    :bind ("C-c SPC" . ryo-modal-global-mode)
     :init
     (add-hook 'ryo-modal-mode-hook
               (lambda ()
@@ -69,7 +70,6 @@ If you want (some) special keybindings when the region is active, you can use [[
                   (selected-minor-mode -1))))
     :config
     (ryo-modal-keys
-     ("q" ryo-modal-mode)
      ("0" "M-0")
      ("1" "M-1")
      ("2" "M-2")
