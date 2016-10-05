@@ -31,7 +31,7 @@ Here's a simple configuration, using [[https://github.com/jwiegley/use-package][
      ("l" forward-char)))
 #+END_SRC
 
-Now I can start =ryo-modal-mode= by pressing =C-c SPC=, and get vim-like =hjkl=-navigation and use digit arguments by pressign the number keys. Notice that other keys are unmodified, so pressing =r= would insert =r= into the buffer.
+Now I can start =ryo-modal-mode= by pressing =C-c SPC=, and get vim-like =hjkl=-navigation and use digit arguments by pressing the number keys. Notice that other keys are unmodified, so pressing =r= would insert =r= into the buffer.
 
 When defining keys the first argument of each binding is the key (will be wrapped inside =kbd=) and the second argument is the target; a command or a string representing a keypress that should be simulated. The rest of the arguments are keyword pairs, providing extra features. The following keywords exist:
 
