@@ -158,21 +158,22 @@ See `ryo-modal-key' for more information."
   nil " ryo" ryo-modal-mode-map
   (if ryo-modal-mode
       (progn
+        (when ryo-modal-cursor-color
+          (add-hook 'post-command-hook #'ryo-modal--cursor-color-update)          )
         (setq-local cursor-type ryo-modal-cursor-type)
         (let ((map (eval (intern-soft (concat "ryo-" (symbol-name major-mode) "-map")))))
           (when map
             (make-local-variable 'minor-mode-overriding-map-alist)
             (push `(ryo-modal-mode . ,map) minor-mode-overriding-map-alist))))
+    (remove-hook 'post-command-hook #'ryo-modal--cursor-color-update)
+    (set-cursor-color ryo-modal-default-cursor-color)
     (setq-local cursor-type (default-value 'cursor-type))))
 
 (defun ryo-modal--cursor-color-update ()
   "Set cursor color depending on if `ryo-modal-mode' is active or not."
-  (when ryo-modal-cursor-color
-    (if ryo-modal-mode
-        (set-cursor-color ryo-modal-cursor-color)
-      (set-cursor-color ryo-modal-default-cursor-color))))
-
-(add-hook 'post-command-hook #'ryo-modal--cursor-color-update)
+  (if ryo-modal-mode
+      (set-cursor-color ryo-modal-cursor-color)
+    (set-cursor-color ryo-modal-default-cursor-color)))
 
 (provide 'ryo-modal)
 ;;; ryo-modal.el ends here
