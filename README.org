@@ -1,0 +1,95 @@
+#+TITLE:RYO modal mode!
+
+=ryo-modal= is an Emacs minor-mode, providing useful features for creating your own modal editing environment. Unlike [[https://bitbucket.org/lyro/evil/wiki/Home][evil]], [[https://github.com/jyp/boon][boon]], [[http://ergoemacs.org/misc/ergoemacs_vi_mode.html][xah-fly-keys]], [[https://github.com/chrisdone/god-mode][god-mode]], [[https://github.com/fgeller/fingers.el][fingers]], and [[http://retroj.net/modal-mode][modal-mode]], =ryo-modal= does not provide any default keybindings: roll your own! =ryo-modal= is similar to (and inspired by) [[https://github.com/mrkkrp/modalka][modalka]], but provides more features.
+
+* Usage
+
+You can use =M-x ryo-modal-mode= to activate =ryo-modal=, but without configuration nothing will happen. You need to add keybindings to it first; this can be done by =ryo-modal-key= (bind one key) or =ryo-modal-keys= (bind many keys at once).
+
+Here's a simple configuration, using [[https://github.com/jwiegley/use-package][use-package]]:
+
+#+BEGIN_SRC emacs-lisp
+  (use-package ryo-modal
+    :commands ryo-modal-mode
+    :bind ("C-c SPC" . ryo-modal-mode)
+    :config
+    (ryo-modal-keys
+     ("q" ryo-modal-mode)
+     ("0" "M-0")
+     ("1" "M-1")
+     ("2" "M-2")
+     ("3" "M-3")
+     ("4" "M-4")
+     ("5" "M-5")
+     ("6" "M-6")
+     ("7" "M-7")
+     ("8" "M-8")
+     ("9" "M-9")
+     ("h" backward-char)
+     ("j" next-line)
+     ("k" previous-line)
+     ("l" forward-char)))
+#+END_SRC
+
+Now I can start =ryo-modal-mode= by pressing =C-c SPC=, and get vim-like =hjkl=-navigation and use digit arguments by pressign the number keys. Notice that other keys are unmodified, so pressing =r= would insert =r= into the buffer.
+
+When defining keys the first argument of each binding is the key (will be wrapped inside =kbd=) and the second argument is the target; a command or a string representing a keypress that should be simulated. The rest of the arguments are keyword pairs, providing extra features. The following keywords exist:
+
+- =:name= :: =ryo-modal= creates a new symbol for the command you bind. By default this name will depend on the target of the binding, but by using =:name= and a string you can give it your own name.
+- =:mode= :: If =:mode= is set to a quoted major mode symbol (for instance =:mode 'org-mode=) the command will only be active in that major mode.
+- =:exit= :: By providing =:exit t= you will exit =ryo-modal-mode= before running the command. This is useful if you have a command and always want to input text after running it.
+- =:read= :: If =:read t= you will be prompted to insert a string in the minibuffer after running the command, and this string will be inserted into the buffer. This can be useful if you want to have a command which for instance replaces a word with another word, without exiting =ryo-modal-mode=.
+- =:then= :: By providing a quoted list of command symbols to =:then= you can specify additional commands that should be run after the first. This way you can easily define command chains, without using =defun= or similar.
+
+Here's an example using the keyword arguments (can be used in =ryo-modal-keys= too):
+
+#+BEGIN_SRC emacs-lisp
+  (ryo-modal-key "SPC k" 'org-previous-visible-heading :then '(forward-to-word
+                                                               org-kill-line)
+                 :mode 'org-mode :name "org-replace-previous-heading" :read t)
+#+END_SRC
+
+Notice that the target command argument needs to be quoted when using =ryo-modal-key=, but not when using =ryo-modal-keys=!
+
+In order to get an overview of all the bindings you've defined, use =M-x ryo-modal-bindings=. If you want to change the cursor color or cursor type, edit =ryo-modal-cursor-color= and/or =ryo-modal-cursor-type=.
+
+* Keybindings when region is active
+
+If you want (some) special keybindings when the region is active, you can use [[https://github.com/Kungsgeten/selected.el][selected.el]]. In order to turn it on/off at the same time as =ryo-modal=, you could do something like this:
+
+#+BEGIN_SRC emacs-lisp
+  (use-package ryo-modal
+    :commands ryo-modal-mode
+    :bind ("C-c SPC" . ryo-modal-mode)
+    :init
+    (add-hook 'ryo-modal-mode-hook
+              (lambda ()
+                (if ryo-modal-mode
+                    (selected-minor-mode 1)
+                  (selected-minor-mode -1))))
+    :config
+    (ryo-modal-keys
+     ("q" ryo-modal-mode)
+     ("0" "M-0")
+     ("1" "M-1")
+     ("2" "M-2")
+     ("3" "M-3")
+     ("4" "M-4")
+     ("5" "M-5")
+     ("6" "M-6")
+     ("7" "M-7")
+     ("8" "M-8")
+     ("9" "M-9")
+     ("h" backward-char)
+     ("j" next-line)
+     ("k" previous-line)
+     ("l" forward-char)))
+#+END_SRC
+
+* Credits
+
+A lot of inspiration and code peeking from [[https://github.com/mrkkrp/modalka][modalka]], but also from [[https://github.com/jwiegley/use-package][use-package/bind-key]].
+
+* Changelog
+
+- October 2016 :: Initial version (0.1).
