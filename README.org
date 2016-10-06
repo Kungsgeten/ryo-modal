@@ -33,7 +33,7 @@ Here's a simple configuration, using [[https://github.com/jwiegley/use-package][
 
 Now I can start =ryo-modal-mode= by pressing =C-c SPC=, and get vim-like =hjkl=-navigation and use digit arguments by pressing the number keys. Notice that other keys are unmodified, so pressing =r= would insert =r= into the buffer.
 
-When defining keys the first argument of each binding is the key (will be wrapped inside =kbd=) and the second argument is the target; a command or a string representing a keypress that should be simulated. The rest of the arguments are keyword pairs, providing extra features. The following keywords exist:
+When defining keys the first argument of each binding is the key (will be wrapped inside =kbd=) and the second argument is the /target/; usually a command or a string representing a keypress that should be simulated. The rest of the arguments are keyword pairs, providing extra features. The following keywords exist:
 
 - =:name= :: =ryo-modal= creates a new symbol for the command you bind. By default this name will depend on the target of the binding, but by using =:name= and a string you can give it your own name.
 - =:mode= :: If =:mode= is set to a quoted major mode symbol (for instance =:mode 'org-mode=) the command will only be active in that major mode.
@@ -52,6 +52,40 @@ Here's an example using the keyword arguments (can be used in =ryo-modal-keys= t
 Notice that the target command argument needs to be quoted when using =ryo-modal-key=, but not when using =ryo-modal-keys=!
 
 In order to get an overview of all the bindings you've defined, use =M-x ryo-modal-bindings=. If you want to change the cursor color or cursor type, edit =ryo-modal-cursor-color= and/or =ryo-modal-cursor-type=.
+
+** Prefix keys
+
+Sometimes you want many keys bound under the same prefix key. A convenient way of doing this is to let the /target/ be a list of the keys in the prefix map. Each element of the list will be sent to =ryo-modal-key=, using the key as a prefix. An example of using =SPC= as a prefix:
+
+#+BEGIN_SRC emacs-lisp
+  (ryo-modal-key
+   "SPC" '(("s" save-buffer)
+           ("g" magit-status)
+           ("b" ibuffer-list-buffers)))
+#+END_SRC
+
+The target should /not be quoted/ if using =ryo-modal-keys=.
+
+** Creating and binding hydras to keys
+
+[[https://github.com/abo-abo/hydra][Hydra]] is a package that allows creation of bindings which are /sort of modal/. =ryo-modal= does not require =hydra=, but if you have it installed you can easily define and bind hydras to keys. This way you can easily create a new "modal state".
+
+In order to create a hydra, bind it to a key using =ryo-modal-key= or =ryo-modal-keys=. The /target/ of the key should be =:hydra= and the third argument should be a (quoted) list; this list will be used as the arguments sent to =defhydra=. An example:
+
+#+BEGIN_SRC emacs-lisp
+  (ryo-modal-key
+   "SPC g" :hydra
+   '(hydra-git ()
+               "A hydra for git!"
+               ("g" magit-status "magit" :color blue)
+               ("j" git-gutter:next-hunk "next")
+               ("k" git-gutter:previous-hunk "previous")
+               ("d" git-gutter:popup-hunk "diff")
+               ("s" git-gutter:stage-hunk "stage")
+               ("r" git-gutter:revert-hunk "revert")
+               ("m" git-gutter:mark-hunk "mark")
+               ("q" nil "cancel" :color blue)))
+#+END_SRC
 
 * Keybindings when region is active
 

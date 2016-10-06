@@ -41,8 +41,20 @@ Major mode specific bindings will be bound to ryo-<major-mode>-map instead.")
 
 ;;;###autoload
 (defun ryo-modal-key (key target &rest args)
-  "Bind KEY to TARGET (command or another keybinding) in `ryo-modal-mode'.
-ARGS should be of the form [:keyword option]...
+  "Bind KEY to TARGET in `ryo-modal-mode'.
+
+TARGET can be one of:
+
+kbd-string   Pressing KEY will simulate TARGET as a keypress.
+command      Calls TARGET interactively.
+list         Each element of TARGET is sent to `ryo-modal-key' again, with
+             KEY as a prefix key.
+:hydra       If you have hydra installed, a new hydra will be created and
+             bound to KEY.  ARGS should be a list containing the arguments
+             sent to `defhydra'.
+
+ARGS should be of the form [:keyword option]... if TARGET is a kbd-string
+or a command.  The following keywords exist:
 
 :name    Can be a string, naming the binding.  If ommited get name from TARGET.
 :exit    If t then exit `ryo-modal-mode' after the command.
@@ -52,39 +64,50 @@ ARGS should be of the form [:keyword option]...
 :then    Can be a quoted list of additional commands that will be run after
          the first.  These will not be shown in the name of the binding.
          (use :name to give it a nickname)."
-  (let* ((name (or (plist-get args :name)
-                   (if (stringp target)
-                       target
-                     (symbol-name target))))
-         (func
-          (defalias (make-symbol (concat "ryo:" name))
-            (lambda ()
-              (interactive)
-              (call-interactively (if (stringp target)
-                                      (key-binding (kbd target))
-                                    target))
-              (mapc #'call-interactively (plist-get args :then))
-              (when (plist-get args :exit) (ryo-modal-mode -1))
-              (when (plist-get args :read) (insert (read-string "Insert: "))))
-            (if (stringp target)
-                (format "%s → %s (`%s')\n\n%s%s"
-                        (key-description (kbd key))
-                        (key-description (kbd target))
-                        (key-binding (kbd target))
-                        (documentation (key-binding (kbd target)))
-                        (mapconcat #'documentation (plist-get args :then) "\n"))
-              (concat (documentation target)
-                      (mapconcat #'documentation (plist-get args :then) "\n")))))
-         (mode (plist-get args :mode)))
-    (if mode
-        (let ((map-name (format "ryo-%s-map" mode)))
-          (unless (intern-soft map-name)
-            (set (intern map-name) (make-sparse-keymap))
-            (set-keymap-parent (eval (intern map-name))
-                               ryo-modal-mode-map))
-          (define-key (eval (intern map-name)) (kbd key) func))
-      (define-key ryo-modal-mode-map (kbd key) func))
-    (add-to-list 'ryo-modal-bindings-list `(,key ,name ,@args))))
+  (cond
+   ((listp target)
+    (mapc (lambda (x)
+            (apply #'ryo-modal-key `(,(concat key " " (car x))
+                                     ,@(cdr x))))
+          target))
+   ((and (require 'hydra nil t)
+         (equal target :hydra))
+    (define-key ryo-modal-mode-map (kbd key) (eval `(defhydra ,@(car args))))
+    (add-to-list 'ryo-modal-bindings-list `(,key ,(symbol-name (caar args)) nil)))
+   (t
+    (let* ((name (or (plist-get args :name)
+                     (if (stringp target)
+                         target
+                       (symbol-name target))))
+           (func
+            (defalias (make-symbol (concat "ryo:" name))
+              (lambda ()
+                (interactive)
+                (call-interactively (if (stringp target)
+                                        (key-binding (kbd target))
+                                      target))
+                (mapc #'call-interactively (plist-get args :then))
+                (when (plist-get args :exit) (ryo-modal-mode -1))
+                (when (plist-get args :read) (insert (read-string "Insert: "))))
+              (if (stringp target)
+                  (format "%s → %s (`%s')\n\n%s%s"
+                          (key-description (kbd key))
+                          (key-description (kbd target))
+                          (key-binding (kbd target))
+                          (documentation (key-binding (kbd target)))
+                          (mapconcat #'documentation (plist-get args :then) "\n"))
+                (concat (documentation target)
+                        (mapconcat #'documentation (plist-get args :then) "\n")))))
+           (mode (plist-get args :mode)))
+      (if mode
+          (let ((map-name (format "ryo-%s-map" mode)))
+            (unless (intern-soft map-name)
+              (set (intern map-name) (make-sparse-keymap))
+              (set-keymap-parent (eval (intern map-name))
+                                 ryo-modal-mode-map))
+            (define-key (eval (intern map-name)) (kbd key) func))
+        (define-key ryo-modal-mode-map (kbd key) func))
+      (add-to-list 'ryo-modal-bindings-list `(,key ,name ,@args))))))
 
 ;;;###autoload
 (defmacro ryo-modal-keys (&rest args)
