@@ -87,6 +87,16 @@ In order to create a hydra, bind it to a key using =ryo-modal-key= or =ryo-modal
                ("q" nil "cancel" :color blue)))
 #+END_SRC
 
+** Remove =ryo:= text from =which-key=
+
+If you're using [[https://github.com/justbur/emacs-which-key][which-key]] you might be annoyed that =ryo= prefixes every command with =ryo:= (the reason for doing that is to avoid namespace clashes). In order to avoid that you can add the following line to your init-file:
+
+#+BEGIN_SRC emacs-lisp
+(push '((nil . "ryo:") . (nil . "")) which-key-replacement-alist)
+#+END_SRC
+
+If you have an old version of =which-key= you may need to update it, since =which-key-replacement-alist= wasn't there from the beginning.
+
 * Keybindings when region is active
 
 If you want (some) special keybindings when the region is active, you can use [[https://github.com/Kungsgeten/selected.el][selected.el]]. In order to turn it on/off at the same time as =ryo-modal=, you could do something like this:
