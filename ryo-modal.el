@@ -6,7 +6,7 @@
 ;; Author: Erik Sjöstrand <sjostrand.erik@gmail.com>
 ;; URL: http://github.com/Kungsgeten/ryo-modal
 ;; Keywords: convenience, modal, keys
-;; Version: 0.1
+;; Version: 0.2
 ;; Package-Requires: ((emacs "24.4"))
 
 ;;; Commentary:
@@ -133,6 +133,20 @@ See `ryo-modal-key' for more information."
                args)))
 
 ;;;###autoload
+(defmacro ryo-modal-major-mode-keys (mode &rest args)
+  "Bind several keys in `ryo-modal-mode', but only if major mode is MODE.
+See `ryo-modal-keys' for more information."
+  `(progn
+     ,@(mapcar (lambda (x)
+                 `(ryo-modal-key ,(car x)
+                                 (if ,(stringp (cadr x))
+                                     ,(cadr x)
+                                   (quote ,(cadr x)))
+                                 ,@(nthcdr 2 x)
+                                 :mode ,mode))
+               args)))
+
+;;;###autoload
 (defun ryo-modal-bindings ()
   "Display a buffer of all bindings in `ryo-modal-mode'."
   (interactive)
@@ -190,7 +204,7 @@ See `ryo-modal-key' for more information."
   (if ryo-modal-mode
       (progn
         (when ryo-modal-cursor-color
-          (add-hook 'post-command-hook #'ryo-modal--cursor-color-update)          )
+          (add-hook 'post-command-hook #'ryo-modal--cursor-color-update))
         (setq-local cursor-type ryo-modal-cursor-type)
         (let ((map (eval (intern-soft (concat "ryo-" (symbol-name major-mode) "-map")))))
           (when map
