@@ -88,6 +88,11 @@ or a command.  The following keywords exist:
   (cond
    ((listp target)
     (mapc (lambda (x)
+            ;; Merge :then lists
+            (when (and (plist-get (cddr x) :then)
+                       (plist-get args :then))
+              (setf (cddr x) (plist-put (cddr x) :then (append (plist-get (cddr x) :then)
+                                                               (plist-get args :then)))))
             (apply #'ryo-modal-key `(,(concat key " " (car x))
                                      ,@(cdr x)
                                      ,@args)))
