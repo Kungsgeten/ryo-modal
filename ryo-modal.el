@@ -253,6 +253,8 @@ See `ryo-modal-keys' for more information."
             (make-local-variable 'minor-mode-overriding-map-alist)
             (push `(ryo-modal-mode . ,map) minor-mode-overriding-map-alist))))
     (remove-hook 'post-command-hook #'ryo-modal--cursor-color-update)
+    (setq minor-mode-overriding-map-alist
+          (assq-delete-all 'ryo-modal-mode minor-mode-overriding-map-alist))
     (set-cursor-color ryo-modal-default-cursor-color)
     (setq-local cursor-type (default-value 'cursor-type))))
 
