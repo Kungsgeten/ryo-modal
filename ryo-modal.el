@@ -37,7 +37,27 @@ Major mode specific bindings will be bound to ryo-<major-mode>-map instead.")
   "Default color of cursor.")
 
 (defvar ryo-modal-bindings-list ()
-  "A list of all the bindings in `ryo-modal-mode'.")
+  "A list of all the bindings in `ryo-modal-mode'.
+It is more convenient to view this using `ryo-modal-bindings'.")
+
+(defvar ryo-modal--last-command nil)
+
+(defun ryo-modal-repeat ()
+  "Repeat last ryo command.
+
+Because of how `ryo-modal-key' works, normal `repeat' don't play
+well with `ryo-modal-mode'. Use this function instead, to repeat
+ryo commands.  Do not bind it using `ryo-modal-key', instead use
+standard `ryo-modal-mode-map':
+
+  (define-key ryo-modal-mode-map (kbd \",\") 'ryo-modal-repeat)
+  (add-to-list 'ryo-modal-bindings-list '(\",\" \"ryo-modal-repeat\"))
+
+If you do not want a command to be remembered by `ryo-modal-repeat',
+add :norepeat t as a keyword."
+  (interactive)
+  (when ryo-modal--last-command
+    (command-execute ryo-modal--last-command nil nil t)))
 
 ;;;###autoload
 (defun ryo-modal-key (key target &rest args)
@@ -56,14 +76,15 @@ list         Each element of TARGET is sent to `ryo-modal-key' again, with
 ARGS should be of the form [:keyword option]... if TARGET is a kbd-string
 or a command.  The following keywords exist:
 
-:name    Can be a string, naming the binding.  If ommited get name from TARGET.
-:exit    If t then exit `ryo-modal-mode' after the command.
-:read    If t then insert a string after the command.
-:mode    If set to a major mode symbol (e.g. 'org-mode) the key will only be
-         bound in that mode.
-:then    Can be a quoted list of additional commands that will be run after
-         the first.  These will not be shown in the name of the binding.
-         (use :name to give it a nickname)."
+:name      Can be a string, naming the binding.  If ommited get name from TARGET.
+:exit      If t then exit `ryo-modal-mode' after the command.
+:read      If t then insert a string after the command.
+:mode      If set to a major mode symbol (e.g. 'org-mode) the key will only be
+           bound in that mode.
+:then      Can be a quoted list of additional commands that will be run after
+           the first.  These will not be shown in the name of the binding.
+           (use :name to give it a nickname).
+:norepeat  If t then do not become a target of `ryo-modal-repeat'."
   (cond
    ((listp target)
     (mapc (lambda (x)
@@ -84,18 +105,24 @@ or a command.  The following keywords exist:
             (defalias (make-symbol (concat "ryo:" name))
               (lambda ()
                 (interactive)
-                ;; Exit if key bound to keymap key
-                (if (and (stringp target)
-                         (keymapp (key-binding (kbd target))))
-                    (progn
-                      (when (plist-get args :exit) (ryo-modal-mode -1))
-                      (setq unread-command-events (listify-key-sequence (kbd target))))
-                  (call-interactively (if (stringp target)
-                                          (key-binding (kbd target))
-                                        target))
-                  (mapc #'call-interactively (plist-get args :then))
-                  (when (plist-get args :exit) (ryo-modal-mode -1))
-                  (when (plist-get args :read) (insert (read-string "Insert: ")))))
+                (let ((cmd-lambda
+                       (lambda ()
+                         (interactive)
+                         ;; Exit if key bound to keymap key
+                         (if (and (stringp target)
+                                  (keymapp (key-binding (kbd target))))
+                             (progn
+                               (when (plist-get args :exit) (ryo-modal-mode -1))
+                               (setq unread-command-events (listify-key-sequence (kbd target))))
+                           (call-interactively (if (stringp target)
+                                                   (key-binding (kbd target))
+                                                 target))
+                           (mapc #'call-interactively (plist-get args :then))
+                           (when (plist-get args :exit) (ryo-modal-mode -1))
+                           (when (plist-get args :read) (insert (read-string "Insert: ")))))))
+                  (unless (plist-get args :norepeat)
+                    (setq ryo-modal--last-command cmd-lambda))
+                  (command-execute cmd-lambda nil nil t)))
               (if (stringp target)
                   (if (keymapp (key-binding (kbd target)))
                       (concat "Call keymap " target)
