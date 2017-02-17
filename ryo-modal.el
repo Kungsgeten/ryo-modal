@@ -148,17 +148,26 @@ or a command.  The following keywords exist:
 ;;;###autoload
 (defmacro ryo-modal-keys (&rest args)
   "Bind several keys in `ryo-modal-mode'.
-Each element in ARGS should of the form (key target [keywords]).
+Typically each element in ARGS should be of the form (key target [keywords]).
 The target should not be quoted.
+The first argument may be a list of keywords; they're applied to all keys:
+
+  \(:exit t :then '(kill-region)).
+
 See `ryo-modal-key' for more information."
-  `(progn
-     ,@(mapcar (lambda (x)
-                 `(ryo-modal-key ,(car x)
-                                 (if ,(stringp (cadr x))
-                                     ,(cadr x)
-                                   (quote ,(cadr x)))
-                                 ,@(nthcdr 2 x)))
-               args)))
+  (let ((kw-list
+         (if (symbolp (caar args))
+             (pop args)
+           nil)))
+    `(progn
+       ,@(mapcar (lambda (x)
+                   `(ryo-modal-key ,(car x)
+                                   (if ,(stringp (cadr x))
+                                       ,(cadr x)
+                                     (quote ,(cadr x)))
+                                   ,@(nthcdr 2 x)
+                                   ,@kw-list))
+                 args))))
 
 ;;;###autoload
 (defmacro ryo-modal-major-mode-keys (mode &rest args)

@@ -15,22 +15,28 @@ Here's a simple configuration, using [[https://github.com/jwiegley/use-package][
     :config
     (define-key ryo-modal-mode-map (kbd ",") 'ryo-modal-repeat)
     (add-to-list 'ryo-modal-bindings-list '("," "ryo-modal-repeat"))
+
     (ryo-modal-keys
      ("q" ryo-modal-mode)
-     ("0" "M-0" :norepeat t)
-     ("1" "M-1" :norepeat t)
-     ("2" "M-2" :norepeat t)
-     ("3" "M-3" :norepeat t)
-     ("4" "M-4" :norepeat t)
-     ("5" "M-5" :norepeat t)
-     ("6" "M-6" :norepeat t)
-     ("7" "M-7" :norepeat t)
-     ("8" "M-8" :norepeat t)
-     ("9" "M-9" :norepeat t)
      ("h" backward-char)
      ("j" next-line)
      ("k" previous-line)
-     ("l" forward-char)))
+     ("l" forward-char))
+
+    (ryo-modal-keys
+     ;; First argyment to ryo-modal-keys may be a list of keywords.
+     ;; These keywords will be applied to all keybindings.
+     (:norepeat t)
+     ("0" "M-0")
+     ("1" "M-1")
+     ("2" "M-2")
+     ("3" "M-3")
+     ("4" "M-4")
+     ("5" "M-5")
+     ("6" "M-6")
+     ("7" "M-7")
+     ("8" "M-8")
+     ("9" "M-9")))
 #+END_SRC
 
 Now I can start =ryo-modal-mode= by pressing =C-c SPC=, and get vim-like =hjkl=-navigation and use digit arguments by pressing the number keys. Notice that other keys are unmodified, so pressing =r= would insert =r= into the buffer. Because of how =ryo= handle things, the normal =repeat= work badly for =ryo= commands; you can use =ryo-modal-repeat= instead. Note that =ryo-modal-repeat= /should not/ be bound using =ryo-modal-key=, but instead using =define-key= or =bind-key=, binding it in =ryo-modal-map=.
@@ -160,5 +166,5 @@ A lot of inspiration and code peeking from [[https://github.com/mrkkrp/modalka][
 
 * Changelog
 
-- February 2017 :: Added =ryo-modal-major-mode-keys=. Also possible to use keywords on all keys with a prefix. Added =ryo-modal-repeat= (0.2).
+- February 2017 :: Added =ryo-modal-major-mode-keys=. Also possible to specify keywords on all keys with a prefix, or all keys in =ryo-modal-keys=. Added =ryo-modal-repeat= (0.2).
 - October 2016 :: Initial version (0.1).
