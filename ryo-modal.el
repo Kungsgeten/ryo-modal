@@ -272,10 +272,14 @@ See `ryo-modal-keys' for more information."
        ((listp (car (cdar args)))
         (setq commands (append commands (ryo-modal--extract-commands-from (car (cdar args))))))
        ((equal (car (cdar args)) :hydra)
-        ;;
-        ;; TODO: extract commands from defhydra
-        ;;
-        (print "got hydra"))
+        (setq my-hydra-args (car (cdr (cdar args))))
+        (let (my-hydra-term)
+          (while my-hydra-args
+            (setq hydra-term (pop my-hydra-args))
+            (when (and (listp hydra-term)
+                       (not (eq hydra-term nil))
+                       (not (eq (car (cdr hydra-term)) nil)))  ;; avoid return nil command
+              (setq commands (append commands (list (car (cdr hydra-term)))))))))
        (t
         (unless (stringp (car (cdar args)))
           (setq commands (append commands (list (car (cdar args))))))))
