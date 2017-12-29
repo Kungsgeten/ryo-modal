@@ -298,7 +298,9 @@ See `ryo-modal-keys' for more information."
 
   ;; step 2: normalize
   (defun use-package-normalize/:ryo-modal (_name _keyword args)
-    "Apply lists of keywords to all keys following that list."
+    "Apply lists of keywords to all keys following that list.
+
+NOTE: this currently has no effect on keys defined using :hydra"
     (let (sanitized-args kwlist)
       (while args
         (cond
@@ -313,22 +315,22 @@ See `ryo-modal-keys' for more information."
   (defun use-package-handler/:ryo-modal (name _keyword arglists rest state)
     "Use-package handler for :ryo-modal."
 
-    ;; for debug only
-    (message "called handler with : %s %s %s %s %s" name _keyword arglists rest state)
-
-    (setq commands (ryo-modal--extract-commands-from arglists))
-    ;;
-    ;; TODO: arglist needs to be properly quoted
-    ;;
     (use-package-concat
      (use-package-process-keywords name
        (use-package-sort-keywords
-        (use-package-plist-append rest :commands commands))
+        (use-package-plist-append rest :commands
+                                  (ryo-modal--extract-commands-from arglists)))
        state)
      `((ignore ,@(mapcar (lambda (arglist)
-                           `(ryo-modal-key
-                             ,@arglist
-                             :package ',name))
+                           (if (stringp (cadr arglist))
+                               `(ryo-modal-key ,(car arglist)
+                                               ,(cadr arglist)
+                                               ,@(nthcdr 2 arglist)
+                                               :package ',name)
+                             `(ryo-modal-key ,(car arglist)
+                                             (quote ,(cadr arglist))
+                                             ,@(nthcdr 2 arglist)
+                                             :package ',name)))
                          arglists))))))
 
 (provide 'ryo-modal)
