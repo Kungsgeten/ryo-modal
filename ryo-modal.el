@@ -70,8 +70,8 @@ command      Calls TARGET interactively.
 list         Each element of TARGET is sent to `ryo-modal-key' again, with
              KEY as a prefix key.
 :hydra       If you have hydra installed, a new hydra will be created and
-             bound to KEY.  ARGS should be a list containing the arguments
-             sent to `defhydra'.
+             bound to KEY.  The first element of ARGS should be a list
+             containing the arguments sent to `defhydra'.
 
 ARGS should be of the form [:keyword option]... if TARGET is a kbd-string
 or a command.  The following keywords exist:
@@ -99,8 +99,7 @@ or a command.  The following keywords exist:
           target))
    ((and (require 'hydra nil t)
          (equal target :hydra))
-    (define-key ryo-modal-mode-map (kbd key) (eval `(defhydra ,@(car args))))
-    (add-to-list 'ryo-modal-bindings-list `(,key ,(symbol-name (caar args)) nil)))
+    (apply #'ryo-modal-key `(,key ,(eval `(defhydra ,@(car args))) ,@(cdr args))))
    (t
     (let* ((name (or (plist-get args :name)
                      (if (stringp target)
@@ -187,6 +186,28 @@ See `ryo-modal-keys' for more information."
                                  ,@(nthcdr 2 x)
                                  :mode ,mode))
                args)))
+
+;;;###autoload
+(defun ryo-modal-set-key (key command)
+  "Give KEY a binding as COMMAND in `ryo-modal-mode-map'.
+
+This function is meant to be used interactively, if you want to
+temporarily bind a key in ryo.
+
+See `global-set-key' for more info."
+  (interactive "KSet ryo key: \nCSet ryo key %s to command: ")
+  (or (vectorp key) (stringp key)
+      (signal 'wrong-type-argument (list 'arrayp key)))
+  (define-key ryo-modal-mode-map key command))
+
+;;;###autoload
+(defun ryo-modal-unset-key (key)
+  "Remove `ryo-modal-mode-map' binding of KEY.
+KEY is a string or vector representing a sequence of keystrokes.
+
+This function is meant to unbind keys set with `ryo-modal-set-key'."
+  (interactive "kUnset ryo key: ")
+  (define-key ryo-modal-mode-map key nil))
 
 ;;;###autoload
 (defun ryo-modal-bindings ()
