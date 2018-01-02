@@ -124,9 +124,9 @@ Ryo-modal also provides a =use-package= keyword: =:ryo=, which is similar to =:b
 #+begin_src emacs-lisp
 (use-package simple
   :ensure nil
+  :ryo
   ("SPC" (("n" next-line :name "my next line")
           ("p" previous-line)))
-  :ryo
   ;; A list of keywords will be applied to all following keybindings up to the next list of keywords.
   (:mode 'org-mode :norepeat t)
   ("0" "M-0")
