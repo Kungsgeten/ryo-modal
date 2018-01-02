@@ -285,5 +285,74 @@ This function is meant to unbind keys set with `ryo-modal-set-key'."
       (set-cursor-color ryo-modal-cursor-color)
     (set-cursor-color ryo-modal-default-cursor-color)))
 
+(defun ryo-modal--extract-commands-from (args)
+  "Extract commands from arglist to enable lazy loading for :ryo-modal."
+  (let (commands)
+    (while args
+      (cond
+       ((listp (car (cdar args)))
+        (setq commands (append commands (ryo-modal--extract-commands-from (car (cdar args))))))
+       ((equal (car (cdar args)) :hydra)
+        (setq my-hydra-args (car (cdr (cdar args))))
+        (let (my-hydra-term)
+          (while my-hydra-args
+            (setq hydra-term (pop my-hydra-args))
+            (when (and (listp hydra-term)
+                       (not (eq hydra-term nil))
+                       (not (eq (car (cdr hydra-term)) nil)))  ;; avoid return nil command
+              (setq commands (append commands (list (car (cdr hydra-term)))))))))
+       (t
+        (unless (stringp (car (cdar args)))
+          (setq commands (append commands (list (car (cdar args))))))))
+      (pop args))
+    commands))
+
+;; use-package integration
+(with-eval-after-load 'use-package-core
+  ;; step 1: introduce ryo-modal keyword before :bind
+  (unless (member :ryo-modal use-package-keywords)
+    (setq use-package-keywords (use-package-list-insert :ryo-modal use-package-keywords :bind)))
+
+  ;; ensure deferred loading
+  (when (boundp 'use-package-deferring-keywords)
+    (add-to-list 'use-package-deferring-keywords :ryo-modal t))
+
+  ;; step 2: normalize
+  (defun use-package-normalize/:ryo-modal (_name _keyword args)
+    "Apply lists of keywords to all keys following that list.
+
+NOTE: this currently has no effect on keys defined using :hydra"
+    (let (sanitized-args kwlist)
+      (while args
+        (cond
+         ((symbolp (caar args))
+          (setq kwlist (pop args)))
+         ((stringp (caar args))
+          (setq sanitized-args (append sanitized-args (list (append (pop args) kwlist))))
+          )))
+      sanitized-args))
+
+  ;; step 3: handler
+  (defun use-package-handler/:ryo-modal (name _keyword arglists rest state)
+    "Use-package handler for :ryo-modal."
+
+    (use-package-concat
+     (use-package-process-keywords name
+       (use-package-sort-keywords
+        (use-package-plist-append rest :commands
+                                  (ryo-modal--extract-commands-from arglists)))
+       state)
+     `((ignore ,@(mapcar (lambda (arglist)
+                           (if (stringp (cadr arglist))
+                               `(ryo-modal-key ,(car arglist)
+                                               ,(cadr arglist)
+                                               ,@(nthcdr 2 arglist)
+                                               :package ',name)
+                             `(ryo-modal-key ,(car arglist)
+                                             (quote ,(cadr arglist))
+                                             ,@(nthcdr 2 arglist)
+                                             :package ',name)))
+                         arglists))))))
+
 (provide 'ryo-modal)
 ;;; ryo-modal.el ends here

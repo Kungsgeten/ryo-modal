@@ -117,6 +117,38 @@ In order to create a hydra, bind it to a key using =ryo-modal-key= or =ryo-modal
                ("q" nil "cancel" :color blue)))
 #+END_SRC
 
+** Use-package keyword
+
+Ryo-modal also provides a use-package keyword: =:ryo-modal=, which is similar to =:bind= in that it
+implies =:defer t= and create autoloads for the bound commands. The keyword is followed by one or
+more key-binding commands, using the same syntax as used by =ryo-modal-keys= as is illustrated by
+the following example:
+
+#+begin_src emacs-lisp
+(use-package modal-test
+  :ensure nil
+  :ryo-modal
+  ;; A list of keywords will be applied to all following keybindings up to the next list of keywords.
+  (:mode 'org-mode :norepeat t)
+  ("0" "M-0")
+  ("G" end-of-buffer :name "insert at buffer end" :read t)
+
+  ;; This new list of keywords will reset the applied defaults; it applies to all keybindings following.
+  (:norepeat t)
+  ("SPC" (("n" next-line :name "my next line")
+          ("p" previous-line)))
+  ;; NOTE: default keywords are currently ignored when using :hydra
+  ("SPC g" :hydra
+   '(hydra-test ()
+                "A hydra for testing"
+                ("g" magit-status "magit" :color blue)
+                ("n" next-line "next line")
+                ("p" previous-line "previous line")
+                ("q" nil "cancel" :color blue))))
+#+end_src
+
+Notice that the target should not be quoted if using =:ryo-modal= (although the third argument when
+using :hydra should be.
 ** Remove =ryo:= text from =which-key=
 
 If you're using [[https://github.com/justbur/emacs-which-key][which-key]] you might be annoyed that =ryo= prefixes every command with =ryo:=. In order to avoid that you can add the following line to your init-file:
