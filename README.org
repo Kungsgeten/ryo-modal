@@ -119,14 +119,14 @@ In order to create a hydra, bind it to a key using =ryo-modal-key= or =ryo-modal
 
 ** Use-package keyword
 
-Ryo-modal also provides a =use-package= keyword: =:ryo-modal=, which is similar to =:bind= in that it implies =:defer t= and create autoloads for the bound commands. The keyword is followed by one or more key-binding commands, using the same syntax as used by =ryo-modal-keys= as is illustrated by the following example:
+Ryo-modal also provides a =use-package= keyword: =:ryo=, which is similar to =:bind= in that it implies =:defer t= and create autoloads for the bound commands. The keyword is followed by one or more key-binding commands, using the same syntax as used by =ryo-modal-keys= as is illustrated by the following example:
 
 #+begin_src emacs-lisp
 (use-package simple
   :ensure nil
   ("SPC" (("n" next-line :name "my next line")
           ("p" previous-line)))
-  :ryo-modal
+  :ryo
   ;; A list of keywords will be applied to all following keybindings up to the next list of keywords.
   (:mode 'org-mode :norepeat t)
   ("0" "M-0")
@@ -142,8 +142,7 @@ Ryo-modal also provides a =use-package= keyword: =:ryo-modal=, which is similar 
                 ("q" nil "cancel" :color blue))))
 #+end_src
 
-Notice that the target should not be quoted if using =:ryo-modal= (although the third argument when
-using =:hydra= should be.
+Notice that the target should not be quoted if using =:ryo= (although the third argument when using =:hydra= should be.
 
 ** Remove =ryo:= text from =which-key=
 
