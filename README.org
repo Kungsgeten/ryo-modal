@@ -96,6 +96,19 @@ Sometimes you want many keys bound under the same prefix key. A convenient way o
 
 Notice that the target should /not be quoted/ if using =ryo-modal-keys=, but it should if using =ryo-modal-key=.
 
+As can be seen above, prefix keys could be used in a similar way as /verbs/ and /text objects/ in Vim. An easy way of doing this is to let the /text objects/ be commands which marks a region, and then the /verbs/ kan be simulated by =:then=, operating upon the selected region. In order to not repeat yourself (specifying the /text objects/ over and over again, as the example above), you could do something like the following:
+
+#+BEGIN_SRC emacs-lisp
+  (let ((text-objects
+         '(("w" er/mark-word :name "Word")
+           ("d" er/mark-defun :name "Defun")
+           ("s" er/mark-sentence :name "Sentence"))))
+    (eval `(ryo-modal-keys
+            ("v" ,text-objects)
+            ("k" ,text-objects :then '(kill-region))
+            ("c" ,text-objects :then '(kill-region) :exit t))))
+#+END_SRC
+
 ** Creating and binding hydras to keys
 
 [[https://github.com/abo-abo/hydra][Hydra]] is a package that allows creation of bindings which are /sort of modal/. =ryo-modal= does not require =hydra=, but if you have it installed you can easily define and bind hydras to keys. This way you can easily create a new "modal state".
