@@ -6,7 +6,7 @@
 ;; Author: Erik Sjöstrand <sjostrand.erik@gmail.com>
 ;; URL: http://github.com/Kungsgeten/ryo-modal
 ;; Keywords: convenience, modal, keys
-;; Version: 0.2
+;; Version: 0.3
 ;; Package-Requires: ((emacs "24.4"))
 
 ;;; Commentary:
@@ -285,56 +285,47 @@ This function is meant to unbind keys set with `ryo-modal-set-key'."
       (set-cursor-color ryo-modal-cursor-color)
     (set-cursor-color ryo-modal-default-cursor-color)))
 
-(defun ryo-modal--extract-commands-from (args)
-  "Extract commands from arglist to enable lazy loading for :ryo-modal."
-  (let (commands)
-    (while args
-      (cond
-       ((listp (car (cdar args)))
-        (setq commands (append commands (ryo-modal--extract-commands-from (car (cdar args))))))
-       ((equal (car (cdar args)) :hydra)
-        (setq my-hydra-args (car (cdr (cdar args))))
-        (let (my-hydra-term)
-          (while my-hydra-args
-            (setq hydra-term (pop my-hydra-args))
-            (when (and (listp hydra-term)
-                       (not (eq hydra-term nil))
-                       (not (eq (car (cdr hydra-term)) nil)))  ;; avoid return nil command
-              (setq commands (append commands (list (car (cdr hydra-term)))))))))
-       (t
-        (unless (stringp (car (cdar args)))
-          (setq commands (append commands (list (car (cdar args))))))))
-      (pop args))
-    commands))
-
 ;; use-package integration
+(defun ryo-modal--extract-commands-from (args)
+  "Extract commands from ARGS to enable lazy loading for :ryo."
+  (let (commands)
+    (dolist (arg args commands)
+      (let ((target (cadr arg)))
+        (cond
+         ((listp target)
+          (push (ryo-modal--extract-commands-from target) commands))
+         ((equal target :hydra)
+          (dolist (hydra-term (cadr (cdr arg)))
+            (when (and hydra-term
+                       (listp hydra-term)
+                       (cadr hydra-term))
+              (push (list (cadr hydra-term)) commands))))
+         ((not (stringp target))
+          (push (list target) commands)))))))
+
 (with-eval-after-load 'use-package-core
   ;; step 1: introduce ryo-modal keyword before :bind
-  (unless (member :ryo-modal use-package-keywords)
-    (setq use-package-keywords (use-package-list-insert :ryo-modal use-package-keywords :bind)))
+  (unless (member :ryo use-package-keywords)
+    (setq use-package-keywords (use-package-list-insert :ryo use-package-keywords :bind)))
 
   ;; ensure deferred loading
   (when (boundp 'use-package-deferring-keywords)
-    (add-to-list 'use-package-deferring-keywords :ryo-modal t))
+    (add-to-list 'use-package-deferring-keywords :ryo t))
 
   ;; step 2: normalize
-  (defun use-package-normalize/:ryo-modal (_name _keyword args)
-    "Apply lists of keywords to all keys following that list.
-
-NOTE: this currently has no effect on keys defined using :hydra"
-    (let (sanitized-args kwlist)
-      (while args
+  (defun use-package-normalize/:ryo (_name _keyword args)
+    "Apply lists of keywords to all keys following that list."
+    (let (kwlist sanitized-args)
+      (dolist (arg args sanitized-args)
         (cond
-         ((symbolp (caar args))
-          (setq kwlist (pop args)))
-         ((stringp (caar args))
-          (setq sanitized-args (append sanitized-args (list (append (pop args) kwlist))))
-          )))
-      sanitized-args))
+         ((symbolp (car arg))
+          (setq kwlist arg))
+         ((stringp (car arg))
+          (push (append arg kwlist) sanitized-args))))))
 
   ;; step 3: handler
-  (defun use-package-handler/:ryo-modal (name _keyword arglists rest state)
-    "Use-package handler for :ryo-modal."
+  (defun use-package-handler/:ryo (name _keyword arglists rest state)
+    "Use-package handler for :ryo."
 
     (use-package-concat
      (use-package-process-keywords name

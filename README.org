@@ -119,14 +119,13 @@ In order to create a hydra, bind it to a key using =ryo-modal-key= or =ryo-modal
 
 ** Use-package keyword
 
-Ryo-modal also provides a use-package keyword: =:ryo-modal=, which is similar to =:bind= in that it
-implies =:defer t= and create autoloads for the bound commands. The keyword is followed by one or
-more key-binding commands, using the same syntax as used by =ryo-modal-keys= as is illustrated by
-the following example:
+Ryo-modal also provides a =use-package= keyword: =:ryo-modal=, which is similar to =:bind= in that it implies =:defer t= and create autoloads for the bound commands. The keyword is followed by one or more key-binding commands, using the same syntax as used by =ryo-modal-keys= as is illustrated by the following example:
 
 #+begin_src emacs-lisp
-(use-package modal-test
+(use-package simple
   :ensure nil
+  ("SPC" (("n" next-line :name "my next line")
+          ("p" previous-line)))
   :ryo-modal
   ;; A list of keywords will be applied to all following keybindings up to the next list of keywords.
   (:mode 'org-mode :norepeat t)
@@ -135,20 +134,17 @@ the following example:
 
   ;; This new list of keywords will reset the applied defaults; it applies to all keybindings following.
   (:norepeat t)
-  ("SPC" (("n" next-line :name "my next line")
-          ("p" previous-line)))
-  ;; NOTE: default keywords are currently ignored when using :hydra
   ("SPC g" :hydra
-   '(hydra-test ()
-                "A hydra for testing"
-                ("g" magit-status "magit" :color blue)
+   '(hydra-nav ()
+                "A hydra for navigation"
                 ("n" next-line "next line")
                 ("p" previous-line "previous line")
                 ("q" nil "cancel" :color blue))))
 #+end_src
 
 Notice that the target should not be quoted if using =:ryo-modal= (although the third argument when
-using :hydra should be.
+using =:hydra= should be.
+
 ** Remove =ryo:= text from =which-key=
 
 If you're using [[https://github.com/justbur/emacs-which-key][which-key]] you might be annoyed that =ryo= prefixes every command with =ryo:=. In order to avoid that you can add the following line to your init-file:
@@ -198,5 +194,6 @@ A lot of inspiration and code peeking from [[https://github.com/mrkkrp/modalka][
 
 * Changelog
 
+- January 2018 :: Added =use-package= keyword =:ryo=. Also added =ryo-modal-set-key= and =ryo-modal-unset-key= (0.3).
 - February 2017 :: Added =ryo-modal-major-mode-keys=. Also possible to specify keywords on all keys with a prefix, or all keys in =ryo-modal-keys=. Added =ryo-modal-repeat= (0.2).
 - October 2016 :: Initial version (0.1).
