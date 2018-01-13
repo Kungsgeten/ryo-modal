@@ -293,15 +293,20 @@ This function is meant to unbind keys set with `ryo-modal-set-key'."
       (let ((target (cadr arg)))
         (cond
          ((listp target)
-          (push (ryo-modal--extract-commands-from target) commands))
+          ;; TODO: recursion doesn't add the commands found; variable scope issue
+          (cl-pushnew (ryo-modal--extract-commands-from target) commands))
          ((equal target :hydra)
-          (dolist (hydra-term (cadr (cdr arg)))
-            (when (and hydra-term
-                       (listp hydra-term)
-                       (cadr hydra-term))
-              (push (list (cadr hydra-term)) commands))))
+          ;; keybindings in a defhydra are enclosed in lists, so first find those
+          (dolist (hydra-arg (cadr (cdr arg)))
+            (when (listp hydra-arg)
+              ;; list found, now extract commands for each keybinding avoiding nil
+              (dolist (hydra-term hydra-arg)
+                (when (and hydra-term
+                           (listp hydra-term)
+                           (cadr hydra-term))
+                  (cl-pushnew (cadr hydra-term) commands))))))
          ((not (stringp target))
-          (push (list target) commands)))))))
+          (cl-pushnew target commands)))))))
 
 (with-eval-after-load 'use-package-core
   ;; step 1: introduce ryo-modal keyword before :bind
