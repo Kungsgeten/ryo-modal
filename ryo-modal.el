@@ -289,19 +289,20 @@ This function is meant to unbind keys set with `ryo-modal-set-key'."
 (defun ryo-modal--extract-commands-from (args)
   "Extract commands from ARGS to enable lazy loading for :ryo."
   (let (commands)
-    (dolist (arg args commands)
-      (let ((target (cadr arg)))
-        (cond
-         ((listp target)
-          (push (ryo-modal--extract-commands-from target) commands))
-         ((equal target :hydra)
-          (dolist (hydra-term (cadr (cdr arg)))
-            (when (and hydra-term
-                       (listp hydra-term)
-                       (cadr hydra-term))
-              (push (list (cadr hydra-term)) commands))))
-         ((not (stringp target))
-          (push (list target) commands)))))))
+    (cl-remove-duplicates
+     (dolist (arg args commands)
+       (let ((target (cadr arg)))
+         (cond
+          ((listp target)
+           (setq commands (append (ryo-modal--extract-commands-from target) commands)))
+          ((equal target :hydra)
+           (dolist (hydra-term (cadr (cl-third arg)))
+             (when (and hydra-term
+                        (listp hydra-term)
+                        (cadr hydra-term))
+               (push (cadr hydra-term) commands))))
+          ((not (stringp target))
+           (push target commands))))))))
 
 (with-eval-after-load 'use-package-core
   ;; step 1: introduce ryo-modal keyword before :bind
