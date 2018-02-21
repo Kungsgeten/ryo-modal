@@ -1,12 +1,12 @@
 ;;; ryo-modal.el --- Roll your own modal mode      -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2016  Erik Sjöstrand
+;; Copyright (C) 2016--2018  Erik Sjöstrand
 ;; MIT License
 
 ;; Author: Erik Sjöstrand <sjostrand.erik@gmail.com>
 ;; URL: http://github.com/Kungsgeten/ryo-modal
 ;; Keywords: convenience, modal, keys
-;; Version: 0.3
+;; Version: 0.4
 ;; Package-Requires: ((emacs "24.4"))
 
 ;;; Commentary:
@@ -58,6 +58,7 @@ add :norepeat t as a keyword."
   (interactive)
   (when ryo-modal--last-command
     (command-execute ryo-modal--last-command nil nil t)))
+(make-obsolete 'ryo-modal-repeat 'repeat "0.4")
 
 ;;;###autoload
 (defun ryo-modal-key (key target &rest args)
@@ -76,15 +77,18 @@ list         Each element of TARGET is sent to `ryo-modal-key' again, with
 ARGS should be of the form [:keyword option]... if TARGET is a kbd-string
 or a command.  The following keywords exist:
 
-:name      Can be a string, naming the binding.  If ommited get name from TARGET.
+:name      A string, naming the binding.  If ommited get name from TARGET.
 :exit      If t then exit `ryo-modal-mode' after the command.
-:read      If t then insert a string after the command.
+:read      If t then prompt for a string to insert after the command.
 :mode      If set to a major mode symbol (e.g. 'org-mode) the key will only be
            bound in that mode.
 :then      Can be a quoted list of additional commands that will be run after
-           the first.  These will not be shown in the name of the binding.
+           the TARGET.  These will not be shown in the name of the binding.
            (use :name to give it a nickname).
-:norepeat  If t then do not become a target of `ryo-modal-repeat'."
+:first     Similar to :then, but is run before the TARGET.
+
+If any ARGS are given, except :mode, a new command named ryo:<hash>:<name> will
+be created.  This is to make sure the name of the created command is unique."
   (cond
    ((listp target)
     (mapc (lambda (x)
@@ -93,9 +97,14 @@ or a command.  The following keywords exist:
                        (plist-get args :then))
               (setf (cddr x) (plist-put (cddr x) :then (append (plist-get (cddr x) :then)
                                                                (plist-get args :then)))))
+            ;; Merge :first lists
+            (when (and (plist-get (cddr x) :first)
+                       (plist-get args :first))
+              (setf (cddr x) (plist-put (cddr x) :first (append (plist-get (cddr x) :first)
+                                                                (plist-get args :first)))))
             (apply #'ryo-modal-key `(,(concat key " " (car x))
-                                     ,@(cdr x)
-                                     ,@args)))
+                             ,@(cdr x)
+                             ,@args)))
           target))
    ((and (require 'hydra nil t)
          (equal target :hydra))
@@ -105,39 +114,53 @@ or a command.  The following keywords exist:
                      (if (stringp target)
                          target
                        (symbol-name target))))
+           (hash (secure-hash 'md5 (format "%s%s" target args)))
+           (docs
+            (if (stringp target)
+                (if (keymapp (key-binding (kbd target)))
+                    (concat "Call keymap " target)
+                  (format "%s → %s (`%s')\n\n%s%s"
+                          (key-description (kbd key))
+                          (key-description (kbd target))
+                          (key-binding (kbd target))
+                          (documentation (key-binding (kbd target)))
+                          (mapconcat #'documentation (plist-get args :then) "\n")))
+              (concat (documentation target)
+                      (mapconcat #'documentation (plist-get args :then) "\n"))))
            (func
-            (defalias (make-symbol (concat "ryo:" name))
-              (lambda ()
-                (interactive)
-                (let ((cmd-lambda
-                       (lambda ()
-                         (interactive)
-                         ;; Exit if key bound to keymap key
-                         (if (and (stringp target)
-                                  (keymapp (key-binding (kbd target))))
-                             (progn
-                               (when (plist-get args :exit) (ryo-modal-mode -1))
-                               (setq unread-command-events (listify-key-sequence (kbd target))))
-                           (call-interactively (if (stringp target)
-                                                   (key-binding (kbd target))
-                                                 target))
-                           (mapc #'call-interactively (plist-get args :then))
-                           (when (plist-get args :exit) (ryo-modal-mode -1))
-                           (when (plist-get args :read) (insert (read-string "Insert: ")))))))
-                  (unless (plist-get args :norepeat)
-                    (setq ryo-modal--last-command cmd-lambda))
-                  (command-execute cmd-lambda nil nil t)))
-              (if (stringp target)
-                  (if (keymapp (key-binding (kbd target)))
-                      (concat "Call keymap " target)
-                    (format "%s → %s (`%s')\n\n%s%s"
-                            (key-description (kbd key))
-                            (key-description (kbd target))
-                            (key-binding (kbd target))
-                            (documentation (key-binding (kbd target)))
-                            (mapconcat #'documentation (plist-get args :then) "\n")))
-                (concat (documentation target)
-                        (mapconcat #'documentation (plist-get args :then) "\n")))))
+            (cond
+             ((and args (or (> (length args) 2)
+                            (not (eq (car args) :mode))))
+              (eval
+               `(defun ,(intern (concat "ryo:" hash ":" name)) ()
+                  ,docs
+                  (interactive)
+                  (dolist (f (quote ,(plist-get args :first)))
+                    (if (commandp f)
+                        (call-interactively f)
+                      (apply f nil)))
+                  (if (and (stringp ',target)
+                           (keymapp (key-binding (kbd ,target))))
+                      (progn
+                        (when ,(plist-get args :exit) (ryo-modal-mode -1))
+                        (setq unread-command-events (listify-key-sequence (kbd ',target))))
+                    (call-interactively (if (stringp ',target)
+                                            (key-binding (kbd ,target))
+                                          ',target))
+                    (dolist (f (quote ,(plist-get args :then)))
+                      (if (commandp f)
+                          (call-interactively f)
+                        (apply f nil)))
+                    (when ,(plist-get args :exit) (ryo-modal-mode -1))
+                    (when ,(plist-get args :read) (insert (read-string "Insert: ")))
+                    (unless ,(plist-get args :norepeat)
+                      (setq ryo-modal--last-command (concat "ryo:" ,hash ":" ,name)))))))
+             ((stringp target)
+              (if (keymapp (key-binding (kbd target)))
+                  (setq unread-command-events (listify-key-sequence (kbd target)))
+                (key-binding (kbd target))))
+             (t
+              target)))
            (mode (plist-get args :mode)))
       (if mode
           (let ((map-name (format "ryo-%s-map" mode)))
@@ -166,25 +189,25 @@ See `ryo-modal-key' for more information."
     `(progn
        ,@(mapcar (lambda (x)
                    `(ryo-modal-key ,(car x)
-                                   (if ,(stringp (cadr x))
-                                       ,(cadr x)
-                                     (quote ,(cadr x)))
-                                   ,@(nthcdr 2 x)
-                                   ,@kw-list))
+                           ,(if (stringp (cadr x))
+                                (cadr x)
+                              `(quote ,(cadr x)))
+                           ,@(nthcdr 2 x)
+                           ,@kw-list))
                  args))))
 
 ;;;###autoload
 (defmacro ryo-modal-major-mode-keys (mode &rest args)
   "Bind several keys in `ryo-modal-mode', but only if major mode is MODE.
-See `ryo-modal-keys' for more information."
+ARGS is the same as `ryo-modal-keys'."
   `(progn
      ,@(mapcar (lambda (x)
                  `(ryo-modal-key ,(car x)
-                                 (if ,(stringp (cadr x))
-                                     ,(cadr x)
-                                   (quote ,(cadr x)))
-                                 ,@(nthcdr 2 x)
-                                 :mode ,mode))
+                         (if ,(stringp (cadr x))
+                             ,(cadr x)
+                           (quote ,(cadr x)))
+                         ,@(nthcdr 2 x)
+                         :mode ,mode))
                args)))
 
 ;;;###autoload

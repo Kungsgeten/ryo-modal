@@ -47,7 +47,8 @@ When defining keys the first argument of each binding is the key (will be wrappe
 - =:mode= :: If =:mode= is set to a quoted major mode symbol (for instance =:mode 'org-mode=) the command will only be active in that major mode. If you have a lot of major mode specific bindings, you may want to use =ryo-modal-major-mode-keys= instead to reduce clutter.
 - =:exit= :: By providing =:exit t= you will exit =ryo-modal-mode= before running the command. This is useful if you have a command and always want to input text after running it.
 - =:read= :: If =:read t= you will be prompted to insert a string in the minibuffer after running the command, and this string will be inserted into the buffer. This can be useful if you want to have a command which for instance replaces a word with another word, without exiting =ryo-modal-mode=.
-- =:then= :: By providing a quoted list of command symbols to =:then= you can specify additional commands that should be run after the first. This way you can easily define command chains, without using =defun= or similar.
+- =:then= :: By providing a quoted list of command symbols, and/or functions to be run with zero arguments (lambdas works too), to =:then= you can specify additional commands that should be run after the "real" command. This way you can easily define command chains, without using =defun= or similar.
+- =:first= :: Similar to =:then=, but will be run before the "real" command. Keep in mind that commands run here will consume =universal-argument= etc, before the real command is run.
 - =:norepeat= :: If you specify =:norepeat t= then using the binding will /not/ make it overwrite the current command being triggered by =ryo-modal-repeat=.
 
 Here's an example using the keyword arguments (can be used in =ryo-modal-keys= too), and an example of =ryo-modal-major-mode-keys=:
@@ -159,10 +160,10 @@ Notice that the target should not be quoted if using =:ryo= (although the third 
 
 ** Remove =ryo:= text from =which-key=
 
-If you're using [[https://github.com/justbur/emacs-which-key][which-key]] you might be annoyed that =ryo= prefixes every command with =ryo:=. In order to avoid that you can add the following line to your init-file:
+If you're using [[https://github.com/justbur/emacs-which-key][which-key]] you might be annoyed that =ryo= prefixes some commands with with =ryo:<hash>:=. In order to avoid that you can add the following line to your init-file:
 
 #+BEGIN_SRC emacs-lisp
-(push '((nil . "ryo:") . (nil . "")) which-key-replacement-alist)
+(push '((nil . "ryo:.*:") . (nil . "")) which-key-replacement-alist)
 #+END_SRC
 
 If you have an old version of =which-key= you may need to update it, since =which-key-replacement-alist= wasn't there from the beginning.
@@ -206,6 +207,7 @@ A lot of inspiration and code peeking from [[https://github.com/mrkkrp/modalka][
 
 * Changelog
 
+- February 2018 :: =ryo-modal-key= now defines commands, in order to make it work with =multiple-cursors= and similar. A benefit of this is making =repeat= work, and because of this =ryo-modal-repeat= is deprecated. Also added =:first= keyword, and =:then= (and =:first=) can have functions (taking zero arguments) instead of commands (0.4).
 - January 2018 :: Added =use-package= keyword =:ryo=. Also added =ryo-modal-set-key= and =ryo-modal-unset-key= (0.3).
 - February 2017 :: Added =ryo-modal-major-mode-keys=. Also possible to specify keywords on all keys with a prefix, or all keys in =ryo-modal-keys=. Added =ryo-modal-repeat= (0.2).
 - October 2016 :: Initial version (0.1).
