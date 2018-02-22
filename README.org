@@ -13,10 +13,8 @@ Here's a simple configuration, using [[https://github.com/jwiegley/use-package][
     :commands ryo-modal-mode
     :bind ("C-c SPC" . ryo-modal-mode)
     :config
-    (define-key ryo-modal-mode-map (kbd ",") 'ryo-modal-repeat)
-    (add-to-list 'ryo-modal-bindings-list '("," "ryo-modal-repeat"))
-
     (ryo-modal-keys
+     ("," ryo-modal-repeat)
      ("q" ryo-modal-mode)
      ("h" backward-char)
      ("j" next-line)
@@ -39,7 +37,7 @@ Here's a simple configuration, using [[https://github.com/jwiegley/use-package][
      ("9" "M-9")))
 #+END_SRC
 
-Now I can start =ryo-modal-mode= by pressing =C-c SPC=, and get vim-like =hjkl=-navigation and use digit arguments by pressing the number keys. Notice that other keys are unmodified, so pressing =r= would insert =r= into the buffer. Because of how =ryo= handle things, the normal =repeat= work badly for =ryo= commands; you can use =ryo-modal-repeat= instead. Note that =ryo-modal-repeat= /should not/ be bound using =ryo-modal-key=, but instead using =define-key= or =bind-key=, binding it in =ryo-modal-map=.
+Now I can start =ryo-modal-mode= by pressing =C-c SPC=, and get vim-like =hjkl=-navigation and use digit arguments by pressing the number keys. Notice that other keys are unmodified, so pressing =r= would insert =r= into the buffer. =ryo= also defines the command =ryo-modal-repeat=, which will repeat the last command executed by =ryo= (but see =:norepeat= below).
 
 When defining keys the first argument of each binding is the key (will be wrapped inside =kbd=) and the second argument is the /target/; usually a command or a string representing a keypress that should be simulated. The rest of the arguments are keyword pairs, providing extra features. The following keywords exist:
 
@@ -207,7 +205,7 @@ A lot of inspiration and code peeking from [[https://github.com/mrkkrp/modalka][
 
 * Changelog
 
-- February 2018 :: =ryo-modal-key= now defines commands, in order to make it work with =multiple-cursors= and similar. A benefit of this is making =repeat= work, and because of this =ryo-modal-repeat= is deprecated. Also added =:first= keyword, and =:then= (and =:first=) can have functions (taking zero arguments) instead of commands (0.4).
+- February 2018 :: =ryo-modal-key= now defines commands, in order to make it work with =multiple-cursors= and similar. Also added =:first= keyword, and =:then= (and =:first=) can have functions (taking zero arguments) instead of commands (0.4).
 - January 2018 :: Added =use-package= keyword =:ryo=. Also added =ryo-modal-set-key= and =ryo-modal-unset-key= (0.3).
 - February 2017 :: Added =ryo-modal-major-mode-keys=. Also possible to specify keywords on all keys with a prefix, or all keys in =ryo-modal-keys=. Added =ryo-modal-repeat= (0.2).
 - October 2016 :: Initial version (0.1).

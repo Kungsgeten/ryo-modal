@@ -22,6 +22,7 @@
 
 ;;; Code:
 (require 'cl-lib)
+(require 'org-macs)
 
 (defvar ryo-modal-mode-map (make-sparse-keymap)
   "General bindings in ryo-modal-mode.
@@ -43,22 +44,25 @@ It is more convenient to view this using `ryo-modal-bindings'.")
 (defvar ryo-modal--last-command nil)
 
 (defun ryo-modal-repeat ()
-  "Repeat last ryo command.
-
-Because of how `ryo-modal-key' works, normal `repeat' don't play
-well with `ryo-modal-mode'. Use this function instead, to repeat
-ryo commands.  Do not bind it using `ryo-modal-key', instead use
-standard `ryo-modal-mode-map':
-
-  (define-key ryo-modal-mode-map (kbd \",\") 'ryo-modal-repeat)
-  (add-to-list 'ryo-modal-bindings-list '(\",\" \"ryo-modal-repeat\"))
+  "Repeat last executed command in `ryo-modal-map' (or major mode variant).
 
 If you do not want a command to be remembered by `ryo-modal-repeat',
 add :norepeat t as a keyword."
   (interactive)
   (when ryo-modal--last-command
     (command-execute ryo-modal--last-command nil nil t)))
-(make-obsolete 'ryo-modal-repeat 'repeat "0.4")
+
+(defvar ryo-modal--non-repeating-commands '(ryo-modal-repeat))
+
+(defun ryo-modal-maybe-store-last-command ()
+  "Update `ryo-modal--last-command', if `this-command' is repeatable."
+  (let ((cmd this-command))
+    (when (and (where-is-internal
+                cmd
+                (list (append ryo-modal-mode-map
+                              (eval (intern-soft (format "ryo-%s-map" major-mode))))))
+               (not (member cmd ryo-modal--non-repeating-commands)))
+      (setq ryo-modal--last-command cmd))))
 
 ;;;###autoload
 (defun ryo-modal-key (key target &rest args)
@@ -82,13 +86,15 @@ or a command.  The following keywords exist:
 :read      If t then prompt for a string to insert after the command.
 :mode      If set to a major mode symbol (e.g. 'org-mode) the key will only be
            bound in that mode.
+:norepeat  If t then do not become a target of `ryo-modal-repeat'.
 :then      Can be a quoted list of additional commands that will be run after
            the TARGET.  These will not be shown in the name of the binding.
            (use :name to give it a nickname).
 :first     Similar to :then, but is run before the TARGET.
 
-If any ARGS are given, except :mode, a new command named ryo:<hash>:<name> will
-be created.  This is to make sure the name of the created command is unique."
+If any ARGS are given, except :mode and/or :norepeat, a new command named
+ryo:<hash>:<name> will be created. This is to make sure the name of the created
+command is unique."
   (cond
    ((listp target)
     (mapc (lambda (x)
@@ -129,8 +135,7 @@ be created.  This is to make sure the name of the created command is unique."
                       (mapconcat #'documentation (plist-get args :then) "\n"))))
            (func
             (cond
-             ((and args (or (> (length args) 2)
-                            (not (eq (car args) :mode))))
+             ((org-plist-delete (org-plist-delete args :mode) :norepeat)
               (eval
                `(defun ,(intern (concat "ryo:" hash ":" name)) ()
                   ,docs
@@ -152,9 +157,7 @@ be created.  This is to make sure the name of the created command is unique."
                           (call-interactively f)
                         (apply f nil)))
                     (when ,(plist-get args :exit) (ryo-modal-mode -1))
-                    (when ,(plist-get args :read) (insert (read-string "Insert: ")))
-                    (unless ,(plist-get args :norepeat)
-                      (setq ryo-modal--last-command (concat "ryo:" ,hash ":" ,name)))))))
+                    (when ,(plist-get args :read) (insert (read-string "Insert: ")))))))
              ((stringp target)
               (if (keymapp (key-binding (kbd target)))
                   (setq unread-command-events (listify-key-sequence (kbd target)))
@@ -162,6 +165,8 @@ be created.  This is to make sure the name of the created command is unique."
              (t
               target)))
            (mode (plist-get args :mode)))
+      (when (plist-get args :norepeat)
+        (add-to-list 'ryo-modal--non-repeating-commands func))
       (if mode
           (let ((map-name (format "ryo-%s-map" mode)))
             (unless (intern-soft map-name)
@@ -289,6 +294,7 @@ This function is meant to unbind keys set with `ryo-modal-set-key'."
   nil " ryo" ryo-modal-mode-map
   (if ryo-modal-mode
       (progn
+        (add-hook 'post-command-hook #'ryo-modal-maybe-store-last-command)
         (when ryo-modal-cursor-color
           (add-hook 'post-command-hook #'ryo-modal--cursor-color-update))
         (setq-local cursor-type ryo-modal-cursor-type)
@@ -296,6 +302,7 @@ This function is meant to unbind keys set with `ryo-modal-set-key'."
           (when map
             (make-local-variable 'minor-mode-overriding-map-alist)
             (push `(ryo-modal-mode . ,map) minor-mode-overriding-map-alist))))
+    (remove-hook 'post-command-hook #'ryo-modal-maybe-store-last-command)
     (remove-hook 'post-command-hook #'ryo-modal--cursor-color-update)
     (setq minor-mode-overriding-map-alist
           (assq-delete-all 'ryo-modal-mode minor-mode-overriding-map-alist))
