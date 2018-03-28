@@ -115,6 +115,8 @@ command is unique."
    ((and (require 'hydra nil t)
          (equal target :hydra))
     (apply #'ryo-modal-key `(,key ,(eval `(defhydra ,@(car args))) ,@(cdr args))))
+   ((and (symbolp target) (not (functionp target)))
+    (error "`%s' isn't a function" (symbol-name target)))
    (t
     (let* ((name (or (plist-get args :name)
                      (if (stringp target)
