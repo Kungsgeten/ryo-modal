@@ -156,15 +156,36 @@ Ryo-modal also provides a =use-package= keyword: =:ryo=, which is similar to =:b
 
 Notice that the target should not be quoted if using =:ryo= (although the third argument when using =:hydra= should be.
 
-** Remove =ryo:= text from =which-key=
+** =which-key= integration
 
-If you're using [[https://github.com/justbur/emacs-which-key][which-key]] you might be annoyed that =ryo= prefixes some commands with with =ryo:<hash>:=. In order to avoid that you can add the following line to your init-file:
+If you're using [[https://github.com/justbur/emacs-which-key][which-key]] you might be annoyed that =ryo= prefixes some commands with =ryo:<hash>:=. In order to remove that from the =which-key= menus, add this to your init-file:
 
 #+BEGIN_SRC emacs-lisp
 (push '((nil . "ryo:.*:") . (nil . "")) which-key-replacement-alist)
 #+END_SRC
 
-If you have an old version of =which-key= you may need to update it, since =which-key-replacement-alist= wasn't there from the beginning.
+If you use prefix keys you can name these, making =which-key= show something useful instead of =+prefix=. In order to do this you must set =which-key-enable-extended-define-key= to =t= before loading =which-key= (please see the [[https://github.com/justbur/emacs-which-key][which-key readme]] on what this does). Then you could use the normal =:name= argument on your =ryo= prefix keys:
+
+#+BEGIN_SRC emacs-lisp
+  (ryo-modal-keys
+   ("v"
+    (("w" er/mark-word :name "Mark word")
+     ("d" er/mark-defun :name "Mark defun")
+     ("s" er/mark-sentence :name "Mark sentence"))
+    :name "mark")
+   ("k"
+    (("w" er/mark-word :name "Kill word")
+     ("d" er/mark-defun :name "Kill defun")
+     ("s" er/mark-sentence :name "Kill sentence"))
+    :name "kill" :then '(kill-region))
+   ("c"
+    (("w" er/mark-word :name "Change word")
+     ("d" er/mark-defun :name "Change defun")
+     ("s" er/mark-sentence :name "Change sentence"))
+    :name "change" :then '(kill-region) :exit t))
+#+END_SRC
+
+If you have an old version of =which-key= you may need to update it, since =which-key-replacement-alist= and =which-key-enable-extended-define-key= weren't there from the beginning.
 
 * Keybindings when region is active
 
@@ -205,6 +226,7 @@ A lot of inspiration and code peeking from [[https://github.com/mrkkrp/modalka][
 
 * Changelog
 
+- March 2018 :: Support for naming prefix keys with =which-key=.
 - February 2018 :: =ryo-modal-key= now defines commands, in order to make it work with =multiple-cursors= and similar. Also added =:first= keyword, and =:then= (and =:first=) can have functions (taking zero arguments) instead of commands (0.4).
 - January 2018 :: Added =use-package= keyword =:ryo=. Also added =ryo-modal-set-key= and =ryo-modal-unset-key= (0.3).
 - February 2017 :: Added =ryo-modal-major-mode-keys=. Also possible to specify keywords on all keys with a prefix, or all keys in =ryo-modal-keys=. Added =ryo-modal-repeat= (0.2).

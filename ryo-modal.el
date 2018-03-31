@@ -73,7 +73,10 @@ TARGET can be one of:
 kbd-string   Pressing KEY will simulate TARGET as a keypress.
 command      Calls TARGET interactively.
 list         Each element of TARGET is sent to `ryo-modal-key' again, with
-             KEY as a prefix key.
+             KEY as a prefix key.  ARGS are copied, except for :name.
+             :name will be used by `which-key' (if installed) to name
+             the prefix key, if `which-key-enable-extended-define-key'
+             is t.
 :hydra       If you have hydra installed, a new hydra will be created and
              bound to KEY.  The first element of ARGS should be a list
              containing the arguments sent to `defhydra'.
@@ -97,6 +100,18 @@ ryo:<hash>:<name> will be created. This is to make sure the name of the created
 command is unique."
   (cond
    ((listp target)
+    (when (and (require 'which-key nil t)
+               which-key-enable-extended-define-key
+               (plist-get args :name))
+      (let ((mode (plist-get args :mode)))
+        (if mode
+            (let ((map-name (format "ryo-%s-map" mode)))
+              (unless (intern-soft map-name)
+                (set (intern map-name) (make-sparse-keymap))
+                (set-keymap-parent (eval (intern map-name))
+                                   ryo-modal-mode-map))
+              (define-key (eval (intern map-name)) (kbd key) `(,(plist-get args :name))))
+          (define-key ryo-modal-mode-map (kbd key) `(,(plist-get args :name))))))
     (mapc (lambda (x)
             ;; Merge :then lists
             (when (and (plist-get (cddr x) :then)
@@ -110,7 +125,7 @@ command is unique."
                                                                 (plist-get args :first)))))
             (apply #'ryo-modal-key `(,(concat key " " (car x))
                              ,@(cdr x)
-                             ,@args)))
+                             ,@(org-plist-delete args :name))))
           target))
    ((and (require 'hydra nil t)
          (equal target :hydra))
