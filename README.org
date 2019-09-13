@@ -22,7 +22,7 @@ Here's a simple configuration, using [[https://github.com/jwiegley/use-package][
      ("l" forward-char))
 
     (ryo-modal-keys
-     ;; First argyment to ryo-modal-keys may be a list of keywords.
+     ;; First argument to ryo-modal-keys may be a list of keywords.
      ;; These keywords will be applied to all keybindings.
      (:norepeat t)
      ("0" "M-0")
