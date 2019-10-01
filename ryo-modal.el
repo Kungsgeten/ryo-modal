@@ -181,7 +181,9 @@ command is unique."
                     (when ,(plist-get args :read) (insert (read-string "Insert: ")))))))
              ((stringp target)
               (if (keymapp (key-binding (kbd target)))
-                  (setq unread-command-events (listify-key-sequence (kbd target)))
+                  ;; TODO: This doesn't seem to work with "keymaps inside of keymaps"
+                  (lambda () (interactive)
+                    (setq unread-command-events (listify-key-sequence (kbd target))))
                 (key-binding (kbd target))))
              (t
               target)))
