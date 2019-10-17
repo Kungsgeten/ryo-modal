@@ -7,7 +7,7 @@
 ;; URL: http://github.com/Kungsgeten/ryo-modal
 ;; Keywords: convenience, modal, keys
 ;; Version: 0.4
-;; Package-Requires: ((emacs "24.4"))
+;; Package-Requires: ((emacs "25.1"))
 
 ;;; Commentary:
 
@@ -23,6 +23,7 @@
 ;;; Code:
 (require 'cl-lib)
 (require 'org-macs)
+(require 'seq)
 
 (defvar ryo-modal-mode-map (make-sparse-keymap)
   "General bindings in ryo-modal-mode.
@@ -54,13 +55,22 @@ add :norepeat t as a keyword."
 
 (defvar ryo-modal--non-repeating-commands '(ryo-modal-repeat))
 
+(defvar ryo-modal-mode-keymaps nil
+  "Holds a list of all ryo major mode specific keymaps.")
+
+(defun ryo-modal-derived-keymaps ()
+  "Get ryo major mode keymaps relevant to the current `major-mode'."
+  (mapcar (lambda (mode)
+            (eval (intern-soft (concat "ryo-" (symbol-name mode) "-map"))))
+          (seq-filter 'derived-mode-p ryo-modal-mode-keymaps)))
+
 (defun ryo-modal-maybe-store-last-command ()
   "Update `ryo-modal--last-command', if `this-command' is repeatable."
   (let ((cmd this-command))
     (when (and (where-is-internal
                 cmd
-                (list (append ryo-modal-mode-map
-                              (eval (intern-soft (format "ryo-%s-map" major-mode))))))
+                (list (apply 'append ryo-modal-mode-map
+                             (ryo-modal-derived-keymaps))))
                (not (member cmd ryo-modal--non-repeating-commands)))
       (setq ryo-modal--last-command cmd))))
 
@@ -109,7 +119,8 @@ command is unique."
               (unless (intern-soft map-name)
                 (set (intern map-name) (make-sparse-keymap))
                 (set-keymap-parent (eval (intern map-name))
-                                   ryo-modal-mode-map))
+                                   ryo-modal-mode-map)
+                (add-to-list 'ryo-modal-mode-keymaps mode))
               (define-key (eval (intern map-name)) (kbd key) `(,(plist-get args :name))))
           (define-key ryo-modal-mode-map (kbd key) `(,(plist-get args :name))))))
     (mapc (lambda (x)
@@ -195,7 +206,8 @@ command is unique."
             (unless (intern-soft map-name)
               (set (intern map-name) (make-sparse-keymap))
               (set-keymap-parent (eval (intern map-name))
-                                 ryo-modal-mode-map))
+                                 ryo-modal-mode-map)
+              (add-to-list 'ryo-modal-mode-keymaps mode))
             (define-key (eval (intern map-name)) (kbd key) func))
         (define-key ryo-modal-mode-map (kbd key) func))
       (add-to-list 'ryo-modal-bindings-list `(,key ,name ,@args))))))
@@ -321,10 +333,9 @@ This function is meant to unbind keys set with `ryo-modal-set-key'."
         (when ryo-modal-cursor-color
           (add-hook 'post-command-hook #'ryo-modal--cursor-color-update))
         (setq-local cursor-type ryo-modal-cursor-type)
-        (let ((map (eval (intern-soft (concat "ryo-" (symbol-name major-mode) "-map")))))
-          (when map
-            (make-local-variable 'minor-mode-overriding-map-alist)
-            (push `(ryo-modal-mode . ,map) minor-mode-overriding-map-alist))))
+        (dolist (map (ryo-modal-derived-keymaps))
+          (make-local-variable 'minor-mode-overriding-map-alist)
+          (push `(ryo-modal-mode . ,map) minor-mode-overriding-map-alist)))
     (remove-hook 'post-command-hook #'ryo-modal-maybe-store-last-command)
     (remove-hook 'post-command-hook #'ryo-modal--cursor-color-update)
     (setq minor-mode-overriding-map-alist

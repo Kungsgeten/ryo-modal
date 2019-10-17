@@ -4,7 +4,7 @@
 
 * Usage
 
-You can use =M-x ryo-modal-mode= to activate =ryo-modal=, but without configuration nothing will happen. You need to add keybindings to it first; this can be done by =ryo-modal-key= (bind one key), =ryo-modal-keys= (bind many keys at once) or =ryo-modal-major-mode-keys= (bind several keys at once, but only if in a specific major mode).
+You can use =M-x ryo-modal-mode= to activate =ryo-modal=, but without configuration nothing will happen. You need to add keybindings to it first; this can be done by =ryo-modal-key= (bind one key), =ryo-modal-keys= (bind many keys at once) or =ryo-modal-major-mode-keys= (bind several keys at once, but only if in a specific major mode, or a major mode derived from another).
 
 Here's a simple configuration, using [[https://github.com/jwiegley/use-package][use-package]]:
 
@@ -42,7 +42,7 @@ Now I can start =ryo-modal-mode= by pressing =C-c SPC=, and get vim-like =hjkl=-
 When defining keys the first argument of each binding is the key (will be wrapped inside =kbd=) and the second argument is the /target/; usually a command or a string representing a keypress that should be simulated. The rest of the arguments are keyword pairs, providing extra features. The following keywords exist:
 
 - =:name= :: =ryo-modal= creates a new symbol for the command you bind. By default this name will depend on the target of the binding, but by using =:name= and a string you can give it your own name. It is perfectly fine to have whitespace, or any other symbol, in the name.
-- =:mode= :: If =:mode= is set to a quoted major mode symbol (for instance =:mode 'org-mode=) the command will only be active in that major mode. If you have a lot of major mode specific bindings, you may want to use =ryo-modal-major-mode-keys= instead to reduce clutter.
+- =:mode= :: If =:mode= is set to a quoted major mode symbol (for instance =:mode 'org-mode=) the command will only be active in that major mode (or in a major mode that derives from it). If you have a lot of major mode specific bindings, you may want to use =ryo-modal-major-mode-keys= instead to reduce clutter.
 - =:exit= :: By providing =:exit t= you will exit =ryo-modal-mode= before running the command. This is useful if you have a command and always want to input text after running it.
 - =:read= :: If =:read t= you will be prompted to insert a string in the minibuffer after running the command, and this string will be inserted into the buffer. This can be useful if you want to have a command which for instance replaces a word with another word, without exiting =ryo-modal-mode=.
 - =:then= :: By providing a quoted list of command symbols, and/or functions to be run with zero arguments (lambdas works too), to =:then= you can specify additional commands that should be run after the "real" command. This way you can easily define command chains, without using =defun= or similar.
@@ -226,6 +226,7 @@ A lot of inspiration and code peeking from [[https://github.com/mrkkrp/modalka][
 
 * Changelog
 
+- October 2019 :: The =:mode= keyword now works on modes which derive from the specified mode.
 - March 2018 :: Support for naming prefix keys with =which-key=.
 - February 2018 :: =ryo-modal-key= now defines commands, in order to make it work with =multiple-cursors= and similar. Also added =:first= keyword, and =:then= (and =:first=) can have functions (taking zero arguments) instead of commands (0.4).
 - January 2018 :: Added =use-package= keyword =:ryo=. Also added =ryo-modal-set-key= and =ryo-modal-unset-key= (0.3).
