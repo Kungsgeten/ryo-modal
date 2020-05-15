@@ -63,8 +63,7 @@ add :norepeat t as a keyword."
   (mapcar (lambda (mode)
             (eval (intern-soft (concat "ryo-" (symbol-name mode) "-map"))))
           (seq-filter (lambda (elt) (or (derived-mode-p elt)
-                                        (when (boundp elt)
-                                          (and (boundp elt) (symbol-value elt)))))
+                                        (and (boundp elt) (symbol-value elt))))
                       ryo-modal-mode-keymaps)))
 
 (defun ryo-modal-maybe-store-last-command ()
