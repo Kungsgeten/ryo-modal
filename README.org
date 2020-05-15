@@ -129,6 +129,14 @@ In order to create a hydra, bind it to a key using =ryo-modal-key= or =ryo-modal
                ("q" nil "cancel" :color blue)))
 #+END_SRC
 
+** Defining "normal mode" keys which enter =ryo-modal=
+
+If you're not in =ryo-modal-mode= you may want a key sequence which first triggers
+a command, and then enters =ryo-modal-mode=. You can then use
+=ryo-modal-command-then-ryo=. It takes a keybinding and usually a command to bind
+it to. You may also specify a keymap in which the command is bound, but
+global-map is used by default.
+
 ** Use-package keyword
 
 Ryo-modal also provides a =use-package= keyword: =:ryo=, which is similar to =:bind= in that it implies =:defer t= and create autoloads for the bound commands. The keyword is followed by one or more key-binding commands, using the same syntax as used by =ryo-modal-keys= as is illustrated by the following example:

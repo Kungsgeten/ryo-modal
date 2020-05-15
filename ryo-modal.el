@@ -253,6 +253,28 @@ ARGS is the same as `ryo-modal-keys'."
                args)))
 
 ;;;###autoload
+(defun ryo-modal-command-then-ryo (binding &optional command keymap)
+  "Define key BINDING to COMMAND in KEYMAP. Then activate `ryo-modal-mode'.
+If COMMAND is excluded, use what is bound to right now in KEYMAP.
+If KEYMAP is excluded, use `current-global-map'."
+  (let* ((keymap (or keymap (current-global-map)))
+         (command (or command
+                      (lookup-key keymap (kbd binding))
+                      (user-error "No binding for '%s'" binding)))
+         (name (symbol-name command))
+         (hash (secure-hash 'md5 (format "%s-then-ryo" command)))
+         (docs (concat (documentation command)
+                       "\n\nThen enter `ryo-modal-mode'."))
+         (func
+          (eval
+           `(defun ,(intern (concat "ryo:" hash ":" name)) ()
+              ,docs
+              (interactive)
+              (call-interactively ',command)
+              (ryo-modal-mode 1)))))
+    (define-key keymap (kbd binding) func)))
+
+;;;###autoload
 (defun ryo-modal-set-key (key command)
   "Give KEY a binding as COMMAND in `ryo-modal-mode-map'.
 
