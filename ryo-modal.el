@@ -59,10 +59,12 @@ add :norepeat t as a keyword."
   "Holds a list of all ryo major mode specific keymaps.")
 
 (defun ryo-modal-derived-keymaps ()
-  "Get ryo major mode keymaps relevant to the current `major-mode'."
+  "Get ryo mode keymaps relevant to the current `major-mode' and/or minor-modes."
   (mapcar (lambda (mode)
             (eval (intern-soft (concat "ryo-" (symbol-name mode) "-map"))))
-          (seq-filter 'derived-mode-p ryo-modal-mode-keymaps)))
+          (seq-filter (lambda (elt) (or (derived-mode-p elt)
+                                        (and `(boundp ',elt) elt)))
+                      ryo-modal-mode-keymaps)))
 
 (defun ryo-modal-maybe-store-last-command ()
   "Update `ryo-modal--last-command', if `this-command' is repeatable."
@@ -97,8 +99,8 @@ or a command.  The following keywords exist:
 :name      A string, naming the binding.  If ommited get name from TARGET.
 :exit      If t then exit `ryo-modal-mode' after the command.
 :read      If t then prompt for a string to insert after the command.
-:mode      If set to a major mode symbol (e.g. 'org-mode) the key will only be
-           bound in that mode.
+:mode      If set to a major or minor mode symbol (e.g. 'org-mode) the key will
+           only be bound in that mode.
 :norepeat  If t then do not become a target of `ryo-modal-repeat'.
 :then      Can be a quoted list of additional commands that will be run after
            the TARGET.  These will not be shown in the name of the binding.
