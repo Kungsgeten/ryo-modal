@@ -68,13 +68,13 @@ add :norepeat t as a keyword."
 
 (defun ryo-modal-maybe-store-last-command ()
   "Update `ryo-modal--last-command', if `this-command' is repeatable."
-  (let ((cmd this-command))
-    (when (and (where-is-internal
-                cmd
-                (list (apply 'append ryo-modal-mode-map
-                             (ryo-modal-derived-keymaps))))
+  (when ryo-modal-mode
+    (let ((cmd (lookup-key (apply 'append ryo-modal-mode-map
+                                  (ryo-modal-derived-keymaps))
+                           (this-command-keys))))
+      (if (and (commandp cmd)
                (not (member cmd ryo-modal--non-repeating-commands)))
-      (setq ryo-modal--last-command cmd))))
+          (setq ryo-modal--last-command cmd)))))
 
 ;;;###autoload
 (defun ryo-modal-key (key target &rest args)
