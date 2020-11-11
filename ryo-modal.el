@@ -1,12 +1,12 @@
 ;;; ryo-modal.el --- Roll your own modal mode      -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2016--2018  Erik Sjöstrand
+;; Copyright (C) 2016--present Erik Sjöstrand
 ;; MIT License
 
 ;; Author: Erik Sjöstrand <sjostrand.erik@gmail.com>
 ;; URL: http://github.com/Kungsgeten/ryo-modal
 ;; Keywords: convenience, modal, keys
-;; Version: 0.4
+;; Version: 0.45
 ;; Package-Requires: ((emacs "25.1"))
 
 ;;; Commentary:
@@ -58,6 +58,10 @@ add :norepeat t as a keyword."
 (defvar ryo-modal-mode-keymaps nil
   "Holds a list of all ryo major mode specific keymaps.")
 
+;; For compability with multiple-cursors
+(defvar mc/cmds-to-run-for-all nil)
+(defvar mc/cmds-to-run-once nil)
+
 (defun ryo-modal-derived-keymaps ()
   "Get ryo mode keymaps relevant to the current `major-mode' and/or minor-modes."
   (mapcar (lambda (mode)
@@ -106,10 +110,12 @@ or a command.  The following keywords exist:
            the TARGET.  These will not be shown in the name of the binding.
            (use :name to give it a nickname).
 :first     Similar to :then, but is run before the TARGET.
+:mc-all    If t the binding's command will be added to `mc/cmds-to-run-for-all'.
+           If 0 the binding's command will be added to `mc/cmds-to-run-once'.
 
-If any ARGS are given, except :mode and/or :norepeat, a new command named
-ryo:<hash>:<name> will be created. This is to make sure the name of the created
-command is unique."
+If any ARGS other han :mode, :norepeat or :mc-all are given, a
+new command named ryo:<hash>:<name> will be created. This is to
+make sure the name of the created command is unique."
   (cond
    ((listp target)
     (when (and (require 'which-key nil t)
@@ -165,7 +171,7 @@ command is unique."
                       (mapconcat #'documentation (plist-get args :then) "\n"))))
            (func
             (cond
-             ((org-plist-delete (org-plist-delete args :mode) :norepeat)
+             ((org-plist-delete (org-plist-delete (org-plist-delete args :mode) :norepeat) :mc-all)
               (eval
                `(defun ,(intern (concat "ryo:" hash ":" name)) ()
                   ,docs
@@ -203,6 +209,12 @@ command is unique."
            (mode (plist-get args :mode)))
       (when (plist-get args :norepeat)
         (add-to-list 'ryo-modal--non-repeating-commands func))
+      (let ((mc-all (plist-get args :mc-all)))
+        (when mc-all
+          (if (and (equal mc-all 0) (not (memq func mc/cmds-to-run-for-all)))
+              (add-to-list 'mc/cmds-to-run-once func)
+            (and (not (memq func mc/cmds-to-run-once))
+                 (add-to-list 'mc/cmds-to-run-for-all func)))))
       (if mode
           (let ((map-name (format "ryo-%s-map" mode)))
             (unless (intern-soft map-name)
