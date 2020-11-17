@@ -24,6 +24,7 @@
 (require 'cl-lib)
 (require 'org-macs)
 (require 'seq)
+(require 'subr-x)
 
 (defvar ryo-modal-mode-map (make-sparse-keymap)
   "General bindings in ryo-modal-mode.
@@ -171,7 +172,9 @@ make sure the name of the created command is unique."
                       (mapconcat #'documentation (plist-get args :then) "\n"))))
            (func
             (cond
-             ((org-plist-delete (org-plist-delete (org-plist-delete args :mode) :norepeat) :mc-all)
+             ((thread-first (org-plist-delete args :mode)
+                (org-plist-delete :norepeat)
+                (org-plist-delete :mc-all))
               (eval
                `(defun ,(intern (concat "ryo:" hash ":" name)) ()
                   ,docs
