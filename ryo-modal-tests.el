@@ -8,6 +8,9 @@
          ,@body)
      (setq ,map (make-sparse-keymap))))
 
+(defmacro rmt--with-clean-ryo-modal-mode-keymap (&rest body)
+  `(rmt--with-clean-keymap ryo-modal-mode-map ,@body))
+
 (defmacro rmt--with-ryo-modal-mode-enabled (&rest body)
   `(unwind-protect
        (progn
@@ -64,8 +67,7 @@
 (ert-deftest rmt--ryo-modal-key--once ()
   (let ((expected-map (make-sparse-keymap)))
     (define-key expected-map (kbd "G") #'rmt--dummy-function-1)
-    (rmt--with-clean-keymap
-     ryo-modal-mode-map
+    (rmt--with-clean-ryo-modal-mode-keymap
      (ryo-modal-key "G" 'rmt--dummy-function-1)
      (should (equal ryo-modal-mode-map expected-map)))))
 
@@ -74,8 +76,7 @@
     (define-key expected-map (kbd "H") #'rmt--dummy-function-1)
     (define-key expected-map (kbd "I") #'rmt--dummy-function-2)
     (define-key expected-map (kbd "J") #'rmt--dummy-function-3)
-    (rmt--with-clean-keymap
-     ryo-modal-mode-map
+    (rmt--with-clean-ryo-modal-mode-keymap
      (ryo-modal-key "H" 'rmt--dummy-function-1)
      (ryo-modal-key "I" 'rmt--dummy-function-2)
      (ryo-modal-key "J" 'rmt--dummy-function-3)
@@ -84,8 +85,7 @@
 (ert-deftest rmt--ryo-modal-key--multi-key-keybinding ()
   (let ((expected-map (make-sparse-keymap)))
     (define-key expected-map (kbd "K L M") #'rmt--dummy-function-1)
-    (rmt--with-clean-keymap
-     ryo-modal-mode-map
+    (rmt--with-clean-ryo-modal-mode-keymap
      (ryo-modal-key "K L M" 'rmt--dummy-function-1)
      (should (equal ryo-modal-mode-map expected-map)))))
 
@@ -94,8 +94,7 @@
     (define-key expected-map (kbd "SPC q") #'rmt--dummy-function-1)
     (define-key expected-map (kbd "SPC w") #'rmt--dummy-function-2)
     (define-key expected-map (kbd "SPC e") #'rmt--dummy-function-3)
-    (rmt--with-clean-keymap
-     ryo-modal-mode-map
+    (rmt--with-clean-ryo-modal-mode-keymap
      (ryo-modal-key
       "SPC" '(("q" rmt--dummy-function-1)
               ("w" rmt--dummy-function-2)
@@ -113,8 +112,7 @@
     (define-key expected-map (kbd "SPC r j") #'rmt--dummy-function-7)
     (define-key expected-map (kbd "SPC r t k") #'rmt--dummy-function-8)
     (define-key expected-map (kbd "SPC r t l") #'rmt--dummy-function-9)
-    (rmt--with-clean-keymap
-     ryo-modal-mode-map
+    (rmt--with-clean-ryo-modal-mode-keymap
      (ryo-modal-key
       "SPC"
       '(
@@ -137,8 +135,7 @@
 (ert-deftest rmt--ryo-modal-key--translate-single-keypress ()
   (let ((expected-map (make-sparse-keymap)))
     (define-key expected-map (kbd "b") #'backward-char)
-    (rmt--with-clean-keymap
-     ryo-modal-mode-map
+    (rmt--with-clean-ryo-modal-mode-keymap
      (ryo-modal-key "b" "C-b")
      (should (equal ryo-modal-mode-map expected-map)))))
 
@@ -146,8 +143,7 @@
   (let ((expected-map (make-sparse-keymap)))
     (define-key expected-map (kbd "Q") #'save-buffers-kill-terminal)
     (define-key expected-map (kbd "W") #'widen)
-    (rmt--with-clean-keymap
-     ryo-modal-mode-map
+    (rmt--with-clean-ryo-modal-mode-keymap
      (ryo-modal-key "Q" "C-x C-c")
      (ryo-modal-key "W" "C-x n w")
      (should (equal ryo-modal-mode-map expected-map)))))
@@ -157,8 +153,7 @@
         (expected-mode-map (make-sparse-keymap)))
     (define-key expected-ryo-map (kbd "A") #'rmt--dummy-function-1)
     (define-key expected-mode-map (kbd "A") #'rmt--dummy-function-2)
-    (rmt--with-clean-keymap
-     ryo-modal-mode-map
+    (rmt--with-clean-ryo-modal-mode-keymap
      (rmt--with-clean-keymap
       ryo-org-mode-map
       (ryo-modal-key "A" 'rmt--dummy-function-1)
@@ -171,8 +166,7 @@
     (define-key expected-map (kbd "A") #'rmt--dummy-function-1)
     (define-key expected-map (kbd "S") #'rmt--dummy-function-2)
     (define-key expected-map (kbd "D") #'rmt--dummy-function-3)
-    (rmt--with-clean-keymap
-     ryo-modal-mode-map
+    (rmt--with-clean-ryo-modal-mode-keymap
      (ryo-modal-key "A" 'rmt--dummy-function-1)
      (ryo-modal-key "S" 'rmt--dummy-function-2 :norepeat t)
      (ryo-modal-key "D" 'rmt--dummy-function-3 :norepeat nil)
@@ -182,8 +176,7 @@
      (should-not (seq-contains-p ryo-modal--non-repeating-commands 'rmt--dummy-function-3)))))
 
 (ert-deftest rmt--ryo-modal-key--name-keyword ()
-  (rmt--with-clean-keymap
-   ryo-modal-mode-map
+  (rmt--with-clean-ryo-modal-mode-keymap
    (ryo-modal-key "A" 'rmt--mock-function-1 :name "cooler-function-name")
    (should (= (seq-length (cdr ryo-modal-mode-map)) 1))
    (let ((bound-function (lookup-key ryo-modal-mode-map (kbd "A"))))
@@ -193,8 +186,7 @@
       (call-interactively bound-function)))))
 
 (ert-deftest rmt--ryo-modal-key--exit-keyword ()
-  (rmt--with-clean-keymap
-   ryo-modal-mode-map
+  (rmt--with-clean-ryo-modal-mode-keymap
    (ryo-modal-key "A" 'rmt--mock-function-1)
    (ryo-modal-key "S" 'rmt--mock-function-1 :exit t)
    (ryo-modal-key "D" 'rmt--mock-function-1 :exit nil)
@@ -221,8 +213,7 @@
       (should ryo-modal-mode)))))
 
 (ert-deftest rmt--ryo-modal-key--then-keyword ()
-  (rmt--with-clean-keymap
-   ryo-modal-mode-map
+  (rmt--with-clean-ryo-modal-mode-keymap
    (ryo-modal-key "A" 'rmt--mock-function-1)
    (ryo-modal-key "S" 'rmt--mock-function-1
                   :then '(rmt--mock-function-2))
@@ -250,8 +241,7 @@
       (call-interactively f-function)))))
 
 (ert-deftest rmt--ryo-modal-key--first-keyword ()
-  (rmt--with-clean-keymap
-   ryo-modal-mode-map
+  (rmt--with-clean-ryo-modal-mode-keymap
    (ryo-modal-key "A" 'rmt--mock-function-1)
    (ryo-modal-key "S" 'rmt--mock-function-1
                   :first '(rmt--mock-function-2))
@@ -279,8 +269,7 @@
       (call-interactively f-function)))))
 
 (ert-deftest rmt--ryo-modal-key--read-keyword ()
-  (rmt--with-clean-keymap
-   ryo-modal-mode-map
+  (rmt--with-clean-ryo-modal-mode-keymap
    (ryo-modal-key "A" 'beginning-of-buffer)
    (ryo-modal-key "S" 'beginning-of-buffer :read t)
    (ryo-modal-key "D" 'beginning-of-buffer :read nil)
@@ -317,8 +306,7 @@
        (should (equal (buffer-string) "bar\nfoo")))))))
 
 (ert-deftest rmt--ryo-modal-key--mc-all-keyword ()
-  (rmt--with-clean-keymap
-   ryo-modal-mode-map
+  (rmt--with-clean-ryo-modal-mode-keymap
    (should (equal mc/cmds-to-run-once nil))
    (should (equal mc/cmds-to-run-for-all nil))
    (ryo-modal-key "A" 'rmt--dummy-function-1)
@@ -353,8 +341,7 @@
     (define-key expected-map (kbd "r d x") #'rmt--dummy-function-6)
     (define-key expected-map (kbd "r f c") #'rmt--dummy-function-7)
     (define-key expected-map (kbd "r f v") #'rmt--dummy-function-8)
-    (rmt--with-clean-keymap
-     ryo-modal-mode-map
+    (rmt--with-clean-ryo-modal-mode-keymap
      (ryo-modal-keys
       ("q" rmt--dummy-function-1)
       ("w" rmt--dummy-function-2)
@@ -373,8 +360,7 @@
 (ert-deftest rmt--ryo-modal-keys--with-keywords ()
   (let ((lhs nil)
         (rhs nil))
-    (rmt--with-clean-keymap
-     ryo-modal-mode-map
+    (rmt--with-clean-ryo-modal-mode-keymap
      (ryo-modal-key "A" 'rmt--dummy-function-1)
      (ryo-modal-key "S" 'rmt--dummy-function-2
                     :first '(end-of-buffer)
@@ -391,8 +377,7 @@
                     :norepeat nil
                     :exit t)
      (setq lhs ryo-modal-mode-map))
-    (rmt--with-clean-keymap
-     ryo-modal-mode-map
+    (rmt--with-clean-ryo-modal-mode-keymap
      (ryo-modal-keys
       ("A" rmt--dummy-function-1))
      (ryo-modal-keys
@@ -409,8 +394,7 @@
 (ert-deftest rmt--ryo-modal-key--keymap-as-target ()
   (let ((expected-map (make-sparse-keymap)))
     (define-key expected-map (kbd "Q") rmt--predefined-custom-map)
-    (rmt--with-clean-keymap
-     ryo-modal-mode-map
+    (rmt--with-clean-ryo-modal-mode-keymap
      (ryo-modal-key "Q" 'rmt--predefined-custom-map)
      (should (equal ryo-modal-mode-map expected-map)))))
 
@@ -428,8 +412,7 @@
     (define-key custom-map-2 (kbd "M-y") #'rmt--dummy-function-6)
     (define-key custom-map-top (kbd "C-f") custom-map-2)
     (define-key expected-map (kbd "Q") custom-map-top)
-    (rmt--with-clean-keymap
-     ryo-modal-mode-map
+    (rmt--with-clean-ryo-modal-mode-keymap
      (ryo-modal-key "Q" 'custom-map-top)
      (should (equal ryo-modal-mode-map expected-map)))))
 
@@ -448,8 +431,7 @@
     (define-key custom-map-2 (kbd "M-z") #'rmt--dummy-function-5)
     (define-key custom-map-2 (kbd "M-y") #'rmt--dummy-function-6)
     (define-key custom-map-top (kbd "C-f") custom-map-2)
-    (rmt--with-clean-keymap
-     ryo-modal-mode-map
+    (rmt--with-clean-ryo-modal-mode-keymap
      (ryo-modal-key "Q a" 'rmt--dummy-function-1
                     :exit t
                     :norepeat t
@@ -481,8 +463,7 @@
                     :first '(end-of-buffer)
                     :then '(beginning-of-buffer))
      (setq lhs ryo-modal-mode-map))
-    (rmt--with-clean-keymap
-     ryo-modal-mode-map
+    (rmt--with-clean-ryo-modal-mode-keymap
      (ryo-modal-key "Q" 'custom-map-top
                     :exit t
                     :norepeat t
@@ -497,8 +478,7 @@
     (rmt--with-temporary-global-binding
      (kbd "C-c custom")
      rmt--predefined-custom-map
-     (rmt--with-clean-keymap
-      ryo-modal-mode-map
+     (rmt--with-clean-ryo-modal-mode-keymap
       (ryo-modal-key "Q" "C-c custom")
       (should (equal ryo-modal-mode-map expected-map))))))
 
@@ -510,8 +490,7 @@
     (rmt--with-temporary-global-binding
      (kbd "C-c custom")
      #'rmt--custom-map-associated-function
-     (rmt--with-clean-keymap
-      ryo-modal-mode-map
+     (rmt--with-clean-ryo-modal-mode-keymap
       (ryo-modal-key "Q" "C-c custom")
       (should (equal ryo-modal-mode-map expected-map))))))
 
@@ -519,13 +498,9 @@
   (let ((expected-map (make-sparse-keymap)))
     (defalias 'rmt--custom-map-associated-function rmt--predefined-custom-map)
     (define-key expected-map (kbd "Q") rmt--predefined-custom-map)
-    (rmt--with-temporary-global-binding
-     (kbd "C-c custom")
-     #'rmt--custom-map-associated-function
-     (rmt--with-clean-keymap
-      ryo-modal-mode-map)
-      (ryo-modal-key "Q" 'rmt--custom-map-associated-function)
-      (should (equal ryo-modal-mode-map expected-map)))))
+    (rmt--with-clean-ryo-modal-mode-keymap
+     (ryo-modal-key "Q" 'rmt--custom-map-associated-function)
+     (should (equal ryo-modal-mode-map expected-map)))))
 
 (ert-deftest rmt--ryo-modal-keys--translate-binding-to-keymap ()
   (let ((expected-map (make-sparse-keymap)))
@@ -534,8 +509,7 @@
     (rmt--with-temporary-global-binding
      (kbd "C-c custom")
      #'rmt--custom-map-associated-function
-     (rmt--with-clean-keymap
-      ryo-modal-mode-map
+     (rmt--with-clean-ryo-modal-mode-keymap
       (ryo-modal-keys
        ("Q" "C-c custom"))
       (should (equal ryo-modal-mode-map expected-map))))))
