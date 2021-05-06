@@ -82,6 +82,10 @@ add :norepeat t as a keyword."
           (setq ryo-modal--last-command cmd)))))
 
 (defun ryo-modal--translate-keymap (keymap)
+  "Translate keymap to equivalent list of pairs (key command).
+
+If KEYMAP contains keybinding to other keymaps these inner keymaps
+will be translated as well."
   (let* ((entries (cdr keymap))
          (translate-entry
           '(lambda (entry)
@@ -106,6 +110,9 @@ list         Each element of TARGET is sent to `ryo-modal-key' again, with
              :name will be used by `which-key' (if installed) to name
              the prefix key, if `which-key-enable-extended-define-key'
              is t.
+keymap       Similarly to list, each keybinding of provided keymap
+             is sent to `ryo-modal-key' again with all keyword arguments applied.
+             It also works with keymap that bind other keymaps like `ctl-x-map'.
 :hydra       If you have hydra installed, a new hydra will be created and
              bound to KEY.  The first element of ARGS should be a list
              containing the arguments sent to `defhydra'.
