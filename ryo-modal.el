@@ -81,6 +81,22 @@ add :norepeat t as a keyword."
                (not (member cmd ryo-modal--non-repeating-commands)))
           (setq ryo-modal--last-command cmd)))))
 
+(defun ryo-modal--translate-keymap (keymap)
+  "Translate keymap to equivalent list of pairs (key command).
+
+If KEYMAP contains keybinding to other keymaps these inner keymaps
+will be translated as well."
+  (let* ((entries (cdr keymap))
+         (translate-entry
+          '(lambda (entry)
+             (let ((key (car entry))
+                   (binding (cdr entry)))
+             (list (key-description (vconcat (list key)))
+                   (if (keymapp binding)
+                       (ryo-modal--translate-keymap binding)
+                     binding))))))
+    (reverse (mapcar translate-entry entries))))
+
 ;;;###autoload
 (defun ryo-modal-key (key target &rest args)
   "Bind KEY to TARGET in `ryo-modal-mode'.
@@ -94,6 +110,9 @@ list         Each element of TARGET is sent to `ryo-modal-key' again, with
              :name will be used by `which-key' (if installed) to name
              the prefix key, if `which-key-enable-extended-define-key'
              is t.
+keymap       Similarly to list, each keybinding of provided keymap
+             is sent to `ryo-modal-key' again with all keyword arguments applied.
+             It also works with keymap that bind other keymaps like `ctl-x-map'.
 :hydra       If you have hydra installed, a new hydra will be created and
              bound to KEY.  The first element of ARGS should be a list
              containing the arguments sent to `defhydra'.
@@ -150,6 +169,17 @@ make sure the name of the created command is unique."
    ((and (require 'hydra nil t)
          (equal target :hydra))
     (apply #'ryo-modal-key `(,key ,(eval `(defhydra ,@(car args))) ,@(cdr args))))
+   ((and (stringp target) (keymapp (key-binding (kbd target))))
+    (let* ((binding (key-binding (kbd target)))
+           (map-to-translate (if (symbolp binding) (symbol-function binding) binding)))
+      (let ((translated-keymap (ryo-modal--translate-keymap map-to-translate)))
+        (apply #'ryo-modal-key `(,key ,translated-keymap ,@args)))))
+   ((and (not (stringp target)) (not (symbol-function target)) (boundp target) (keymapp (symbol-value target)))
+    (let ((translated-keymap (ryo-modal--translate-keymap (symbol-value target))))
+      (apply #'ryo-modal-key `(,key ,translated-keymap ,@args))))
+   ((and (not (stringp target)) (keymapp target))
+    (let ((translated-keymap (ryo-modal--translate-keymap (symbol-function target))))
+      (apply #'ryo-modal-key `(,key ,translated-keymap ,@args))))
    ((and (symbolp target) (not (functionp target)))
     (error "`%s' isn't a function" (symbol-name target)))
    (t
