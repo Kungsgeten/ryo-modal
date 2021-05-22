@@ -122,7 +122,6 @@ In order to create a hydra, bind it to a key using =ryo-modal-key= or =ryo-modal
    "SPC g" :hydra
    '(hydra-git ()
                "A hydra for git!"
-               ("g" magit-status "magit" :color blue)
                ("j" git-gutter:next-hunk "next")
                ("k" git-gutter:previous-hunk "previous")
                ("d" git-gutter:popup-hunk "diff")
@@ -130,6 +129,18 @@ In order to create a hydra, bind it to a key using =ryo-modal-key= or =ryo-modal
                ("r" git-gutter:revert-hunk "revert")
                ("m" git-gutter:mark-hunk "mark")
                ("q" nil "cancel" :color blue)))
+#+END_SRC
+
+*** Adding to preexisting hydras
+
+If, for example, you wanted to add the =magit-status= function to the previously created =hydra-git= example, you would do the following:
+
+#+BEGIN_SRC emacs-lisp
+  (ryo-modal-key
+   "SPC g" :hydra+
+   '(hydra-git ()
+               "A hydra for git!"
+               ("g" magit-status "magit" :color blue)))
 #+END_SRC
 
 ** Defining "normal mode" keys which enter =ryo-modal=
