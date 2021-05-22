@@ -116,7 +116,7 @@ keymap       Similarly to list, each keybinding of provided keymap
 :hydra       If you have hydra installed, a new hydra will be created and
              bound to KEY.  The first element of ARGS should be a list
              containing the arguments sent to `defhydra'.
-:hydra+      If you have hydra installed, this will add heads to a pre-existing hydra.
+:hydra+      If you have hydra installed, this will add heads to a preexisting hydra.
              As with the `:hydra' keyword, the first element of ARGS should be a list
              containing the arguments sent to `defhydra+'.
 
