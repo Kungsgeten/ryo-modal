@@ -116,6 +116,9 @@ keymap       Similarly to list, each keybinding of provided keymap
 :hydra       If you have hydra installed, a new hydra will be created and
              bound to KEY.  The first element of ARGS should be a list
              containing the arguments sent to `defhydra'.
+:hydra+      If you have hydra installed, this will add heads to a preexisting hydra.
+             As with the `:hydra' keyword, the first element of ARGS should be a list
+             containing the arguments sent to `defhydra+'.
 
 ARGS should be of the form [:keyword option]... if TARGET is a kbd-string
 or a command.  The following keywords exist:
@@ -169,6 +172,9 @@ make sure the name of the created command is unique."
    ((and (require 'hydra nil t)
          (equal target :hydra))
     (apply #'ryo-modal-key `(,key ,(eval `(defhydra ,@(car args))) ,@(cdr args))))
+   ((and (require 'hydra nil t)
+         (equal target :hydra+))
+    (apply #'ryo-modal-key `(,key ,(eval `(defhydra+ ,@(car args))) ,@(cdr args))))
    ((and (stringp target) (keymapp (key-binding (kbd target))))
     (let* ((binding (key-binding (kbd target)))
            (map-to-translate (if (symbolp binding) (symbol-function binding) binding)))
