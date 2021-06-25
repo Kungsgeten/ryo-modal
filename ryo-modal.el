@@ -97,6 +97,17 @@ will be translated as well."
                      binding))))))
     (reverse (mapcar translate-entry entries))))
 
+(defun ryo-modal--which-key-enable-extended-define-key ()
+  "Check if which-key's which-key-enable-extended-define-key is t.
+
+Checking variable's value is only necessary up to v3.5.2 of which-key.
+Since v3.5.3 which-key doesn't have that variable because which-key
+manually parses keymaps instead of using advice guarded by that variable."
+  (and (require 'which-key nil t)
+       (if (boundp 'which-key-enable-extended-define-key)
+           which-key-enable-extended-define-key
+         t)))
+
 ;;;###autoload
 (defun ryo-modal-key (key target &rest args)
   "Bind KEY to TARGET in `ryo-modal-mode'.
@@ -141,8 +152,7 @@ new command named ryo:<hash>:<name> will be created. This is to
 make sure the name of the created command is unique."
   (cond
    ((listp target)
-    (when (and (require 'which-key nil t)
-               which-key-enable-extended-define-key
+    (when (and (ryo-modal--which-key-enable-extended-define-key)
                (plist-get args :name))
       (let ((mode (plist-get args :mode)))
         (if mode
