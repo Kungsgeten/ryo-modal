@@ -186,7 +186,7 @@ If you're using [[https://github.com/justbur/emacs-which-key][which-key]] you mi
 (push '((nil . "ryo:.*:") . (nil . "")) which-key-replacement-alist)
 #+END_SRC
 
-If you use prefix keys you can name these, making =which-key= show something useful instead of =+prefix=. In order to do this you must set =which-key-enable-extended-define-key= to =t= before loading =which-key= (please see the [[https://github.com/justbur/emacs-which-key][which-key readme]] on what this does). Then you could use the normal =:name= argument on your =ryo= prefix keys:
+If you use prefix keys you can name these, making =which-key= show something useful instead of =+prefix=:
 
 #+BEGIN_SRC emacs-lisp
   (ryo-modal-keys
@@ -207,7 +207,7 @@ If you use prefix keys you can name these, making =which-key= show something use
     :name "change" :then '(kill-region) :exit t))
 #+END_SRC
 
-If you have an old version of =which-key= you may need to update it, since =which-key-replacement-alist= and =which-key-enable-extended-define-key= weren't there from the beginning.
+If you have an old version of =which-key= you may need to update it, since =which-key-replacement-alist= and wasn't there from the beginning.
 
 * Keybindings when region is active
 

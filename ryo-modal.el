@@ -108,8 +108,7 @@ command      Calls TARGET interactively.
 list         Each element of TARGET is sent to `ryo-modal-key' again, with
              KEY as a prefix key.  ARGS are copied, except for :name.
              :name will be used by `which-key' (if installed) to name
-             the prefix key, if `which-key-enable-extended-define-key'
-             is t.
+             the prefix key.
 keymap       Similarly to list, each keybinding of provided keymap
              is sent to `ryo-modal-key' again with all keyword arguments applied.
              It also works with keymap that bind other keymaps like `ctl-x-map'.
@@ -142,7 +141,6 @@ make sure the name of the created command is unique."
   (cond
    ((listp target)
     (when (and (require 'which-key nil t)
-               which-key-enable-extended-define-key
                (plist-get args :name))
       (let ((mode (plist-get args :mode)))
         (if mode
