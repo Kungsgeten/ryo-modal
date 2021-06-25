@@ -438,6 +438,12 @@ This function is meant to unbind keys set with `ryo-modal-set-key'."
                         (listp hydra-term)
                         (cadr hydra-term))
                (push (cadr hydra-term) commands))))
+          ((equal target :hydra+)
+           (dolist (hydra-term (cadr (cl-third arg)))
+             (when (and hydra-term
+                        (listp hydra-term)
+                        (cadr hydra-term))
+               (push (cadr hydra-term) commands))))
           ((not (stringp target))
            (push target commands))))))))
 
