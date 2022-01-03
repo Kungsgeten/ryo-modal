@@ -44,6 +44,7 @@ Major mode specific bindings will be bound to ryo-<major-mode>-map instead.")
 It is more convenient to view this using `ryo-modal-bindings'.")
 
 (defvar ryo-modal--last-command nil)
+(defvar ryo-modal--last-command-prefix-arg nil)
 
 (defun ryo-modal-repeat ()
   "Repeat last executed command in `ryo-modal-map' (or major mode variant).
@@ -52,6 +53,7 @@ If you do not want a command to be remembered by `ryo-modal-repeat',
 add :norepeat t as a keyword."
   (interactive)
   (when ryo-modal--last-command
+    (setf current-prefix-arg ryo-modal--last-command-prefix-arg)
     (command-execute ryo-modal--last-command nil nil t)))
 
 (defvar ryo-modal--non-repeating-commands '(ryo-modal-repeat))
@@ -77,9 +79,10 @@ add :norepeat t as a keyword."
     (let ((cmd (lookup-key (apply 'append ryo-modal-mode-map
                                   (ryo-modal-derived-keymaps))
                            (this-command-keys))))
-      (if (and (commandp cmd)
-               (not (member cmd ryo-modal--non-repeating-commands)))
-          (setq ryo-modal--last-command cmd)))))
+      (when (and (commandp cmd)
+                 (not (member cmd ryo-modal--non-repeating-commands)))
+        (setq ryo-modal--last-command-prefix-arg last-prefix-arg)
+        (setq ryo-modal--last-command cmd)))))
 
 (defun ryo-modal--translate-keymap (keymap)
   "Translate keymap to equivalent list of pairs (key command).
