@@ -155,7 +155,7 @@ make sure the name of the created command is unique."
                 (add-to-list 'ryo-modal-mode-keymaps mode))
               (define-key (eval (intern map-name)) (kbd key) `(,(plist-get args :name))))
           (define-key ryo-modal-mode-map (kbd key) `(,(plist-get args :name))))))
-    (if (equal (car target) 'closure)
+    (if (memq (car target) '(closure lambda))
         (let* ((mode-name (ignore-errors (symbol-name mode)))
                (name (intern (concat "ryo" (or mode-name (format "-%s" mode-name)) (format "/lambda-%s" key)))))
           (defalias name target)
