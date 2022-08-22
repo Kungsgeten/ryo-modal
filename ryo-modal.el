@@ -159,7 +159,7 @@ make sure the name of the created command is unique."
         (let* ((mode (plist-get args :mode))
                (name (intern (concat "ryo" (and mode (format "-%s" mode)) (format "/lambda-%s" key)))))
           (defalias name target)
-          (ryo-modal-key key name args))
+          (apply #'ryo-modal-key key name args))
       (mapc (lambda (x)
               ;; Merge :then lists
               (when (and (plist-get (cddr x) :then)
