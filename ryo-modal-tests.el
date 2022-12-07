@@ -64,6 +64,12 @@
     (define-key map (kbd "C-f") #'rmt--dummy-function-4)
     map))
 
+(defvar rmt--dummy-repeat-map ()
+  (let ((map (make-sparse-keymap)))
+    (define-key map "D" #'rmt--dummy-function-3)
+    (define-key map "F" #'rmt--dummy-function-4)
+    map))
+
 (ert-deftest rmt--ryo-modal-key--once ()
   (let ((expected-map (make-sparse-keymap)))
     (define-key expected-map (kbd "G") #'rmt--dummy-function-1)
@@ -513,3 +519,105 @@
       (ryo-modal-keys
        ("Q" "C-c custom"))
       (should (equal ryo-modal-mode-map expected-map))))))
+
+(ert-deftest rmt--ryo-modal-key--no-properties-put-on-target-when-empty-list-is-passed ()
+  (rmt--with-clean-ryo-modal-mode-keymap
+   (ryo-modal-key "A" 'rmt--dummy-function-1)
+   (ryo-modal-key "S" 'rmt--dummy-function-1 :properties '())
+   (let* ((a-key-symbol (lookup-key ryo-modal-mode-map (kbd "A")))
+          (s-key-symbol (lookup-key ryo-modal-mode-map (kbd "S")))
+          (original-command-properties (symbol-plist 'rmt--dummy-function-1))
+          (a-properties (symbol-plist a-key-symbol))
+          (s-properties (symbol-plist s-key-symbol)))
+     (should (equal original-command-properties a-properties))
+     (should (equal original-command-properties s-properties))
+     (should (equal a-properties s-properties)))))
+
+(ert-deftest rmt--ryo-modal-key--put-properties-on-target ()
+  (rmt--with-clean-ryo-modal-mode-keymap
+   (ryo-modal-key
+    "A"
+    'rmt--dummy-function-1
+    :name "Foo")
+   ;; Delete-Selection mode example
+   (ryo-modal-key
+    "S"
+    'rmt--dummy-function-2
+    :name "Bar"
+    :properties '((delete-selection . yank)))
+   ;; Repeat mode example
+   (ryo-modal-key
+    "D"
+    'rmt--dummy-function-3
+    :name "Baz"
+    :properties '((repeat-map . rmt--dummy-repeat-map)))
+   ;; Multiple properties
+   (ryo-modal-key
+    "F"
+    'rmt--dummy-function-4
+    :name "Qux"
+    :properties '((delete-selection . yank)
+                  (repeat-map . rmt--dummy-repeat-map)))
+   (let ((a-key-symbol (lookup-key ryo-modal-mode-map (kbd "A")))
+         (s-key-symbol (lookup-key ryo-modal-mode-map (kbd "S")))
+         (d-key-symbol (lookup-key ryo-modal-mode-map (kbd "D")))
+         (f-key-symbol (lookup-key ryo-modal-mode-map (kbd "F"))))
+     ;; Initially no properties on "A"
+     (should (equal (get a-key-symbol 'delete-selection) nil))
+     (should (equal (get a-key-symbol 'repeat-map) nil))
+     ;; This is how it would be done without :properties
+     (put a-key-symbol 'delete-selection 'yank)
+     (should (equal (get a-key-symbol 'delete-selection) 'yank))
+     (put a-key-symbol 'repeat-map 'rmt--dummy-repeat-map)
+     (should (equal (get a-key-symbol 'repeat-map) 'rmt--dummy-repeat-map))
+     ;; And this is the exact same desired effect with :properties
+     ;;;; Delete-Selection
+     (should (equal (get s-key-symbol 'delete-selection) 'yank))
+     (should (equal (get d-key-symbol 'delete-selection) nil))
+     (should (equal (get f-key-symbol 'delete-selection) 'yank))
+     ;;;; Repeat
+     (should (equal (get s-key-symbol 'repeat-map) nil))
+     (should (equal (get d-key-symbol 'repeat-map) 'rmt--dummy-repeat-map))
+     (should (equal (get f-key-symbol 'repeat-map) 'rmt--dummy-repeat-map)))))
+
+(ert-deftest rmt--ryo-modal-keys--with-properties-keyword ()
+  (let ((lhs nil)
+        (rhs nil))
+  (rmt--with-clean-ryo-modal-mode-keymap
+   (ryo-modal-key
+    "A" 'rmt--dummy-function-1
+    :properties '((delete-selection . yank)))
+   (ryo-modal-key
+    "S" 'rmt--dummy-function-2
+    :properties '((delete-selection . yank)))
+   (ryo-modal-key
+    "D" 'rmt--dummy-function-3
+    :properties '((repeat-map . rmt--dummy-repeat-map)))
+   (ryo-modal-key
+    "F" 'rmt--dummy-function-4
+    :properties '((repeat-map . rmt--dummy-repeat-map)))
+   (ryo-modal-key
+    "G" 'rmt--dummy-function-5
+    :properties '((delete-selection . yank)
+                  (repeat-map . rmt--dummy-repeat-map)))
+   (ryo-modal-key
+    "H" 'rmt--dummy-function-6
+    :properties '((delete-selection . yank)
+                  (repeat-map . rmt--dummy-repeat-map)))
+   (setq lhs ryo-modal-mode-map))
+  (rmt--with-clean-ryo-modal-mode-keymap
+   (ryo-modal-keys
+    (:properties '((delete-selection . yank)))
+    ("A" rmt--dummy-function-1)
+    ("S" rmt--dummy-function-2))
+   (ryo-modal-keys
+    (:properties '((repeat-map . rmt--dummy-repeat-map)))
+    ("D" rmt--dummy-function-3)
+    ("F" rmt--dummy-function-4))
+   (ryo-modal-keys
+    (:properties '((delete-selection . yank)
+                   (repeat-map . rmt--dummy-repeat-map)))
+    ("G" rmt--dummy-function-5)
+    ("H" rmt--dummy-function-6))
+   (setq rhs ryo-modal-mode-map))
+  (should (equal lhs rhs))))
