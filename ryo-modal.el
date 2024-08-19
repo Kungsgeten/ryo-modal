@@ -151,7 +151,7 @@ make sure the name of the created command is unique."
                                    ryo-modal-mode-map)
                 (add-to-list 'ryo-modal-mode-keymaps mode))
               (define-key (eval (intern map-name)) (kbd key) `(,(plist-get args :name))))
-          (define-key ryo-modal-mode-map (kbd key) `(,(plist-get args :name))))))
+          (define-key ryo-modal-mode-map (kbd key) `(,(plist-get args :name) . (keymap))))))
     (mapc (lambda (x)
             ;; Merge :then lists
             (when (and (plist-get (cddr x) :then)
@@ -164,8 +164,8 @@ make sure the name of the created command is unique."
               (setf (cddr x) (plist-put (cddr x) :first (append (plist-get (cddr x) :first)
                                                                 (plist-get args :first)))))
             (apply #'ryo-modal-key `(,(concat key " " (car x))
-                                     ,@(cdr x)
-                                     ,@(org-plist-delete args :name))))
+                             ,@(cdr x)
+                             ,@(org-plist-delete args :name))))
           target))
    ((and (require 'hydra nil t)
          (equal target :hydra))
@@ -207,8 +207,8 @@ make sure the name of the created command is unique."
            (func
             (cond
              ((thread-first (org-plist-delete args :mode)
-                (org-plist-delete :norepeat)
-                (org-plist-delete :mc-all))
+                            (org-plist-delete :norepeat)
+                            (org-plist-delete :mc-all))
               (eval
                `(defun ,(intern (concat "ryo:" hash ":" name)) ()
                   ,docs
