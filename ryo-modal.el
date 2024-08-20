@@ -6,7 +6,7 @@
 ;; Author: Erik Sjöstrand <sjostrand.erik@gmail.com>
 ;; URL: http://github.com/Kungsgeten/ryo-modal
 ;; Keywords: convenience, modal, keys
-;; Version: 0.45
+;; Version: 0.46
 ;; Package-Requires: ((emacs "25.1"))
 
 ;;; Commentary:
@@ -110,8 +110,7 @@ kbd-string   Pressing KEY will simulate TARGET as a keypress.
 command      Calls TARGET interactively.
 list         Each element of TARGET is sent to `ryo-modal-key' again, with
              KEY as a prefix key.  ARGS are copied, except for :name.
-             :name will be used by `which-key' (if installed) to name
-             the prefix key.
+             :name can be used to give the prefix key a name.
 keymap       Similarly to list, each keybinding of provided keymap
              is sent to `ryo-modal-key' again with all keyword arguments applied.
              It also works with keymap that bind other keymaps like `ctl-x-map'.
@@ -144,8 +143,7 @@ new command named ryo:<hash>:<name> will be created. This is to
 make sure the name of the created command is unique."
   (cond
    ((listp target)
-    (when (and (require 'which-key nil t)
-               (plist-get args :name))
+    (when (plist-get args :name)
       (let ((mode (plist-get args :mode)))
         (if mode
             (let ((map-name (format "ryo-%s-map" mode)))
@@ -154,8 +152,12 @@ make sure the name of the created command is unique."
                 (set-keymap-parent (eval (intern map-name))
                                    ryo-modal-mode-map)
                 (add-to-list 'ryo-modal-mode-keymaps mode))
-              (define-key (eval (intern map-name)) (kbd key) `(,(plist-get args :name))))
-          (define-key ryo-modal-mode-map (kbd key) `(,(plist-get args :name) . (keymap))))))
+              (define-key (eval (intern map-name)) (kbd key)
+                          (cons (plist-get args :name)
+                                (make-sparse-keymap))))
+          (define-key ryo-modal-mode-map (kbd key)
+                      (cons (plist-get args :name)
+                            (make-sparse-keymap))))))
     (mapc (lambda (x)
             ;; Merge :then lists
             (when (and (plist-get (cddr x) :then)
@@ -212,7 +214,8 @@ make sure the name of the created command is unique."
             (cond
              ((thread-first (org-plist-delete args :mode)
                             (org-plist-delete :norepeat)
-                            (org-plist-delete :mc-all))
+                            (org-plist-delete :mc-all)
+                            (org-plist-delete :name))
               (eval
                `(defun ,(intern (concat "ryo:" hash ":" name)) ()
                   ,docs
@@ -263,8 +266,8 @@ make sure the name of the created command is unique."
               (set-keymap-parent (eval (intern map-name))
                                  ryo-modal-mode-map)
               (add-to-list 'ryo-modal-mode-keymaps mode))
-            (define-key (eval (intern map-name)) (kbd key) func))
-        (define-key ryo-modal-mode-map (kbd key) func))
+            (define-key (eval (intern map-name)) (kbd key) (cons name func)))
+        (define-key ryo-modal-mode-map (kbd key) (cons name func)))
       (when-let ((props (plist-get args :properties)))
         (mapcar
          (lambda (pair)
@@ -315,8 +318,8 @@ ARGS is the same as `ryo-modal-keys'."
 ;;;###autoload
 (defun ryo-modal-command-then-ryo (binding &optional command keymap)
   "Define key BINDING to COMMAND in KEYMAP. Then activate `ryo-modal-mode'.
-If COMMAND is excluded, use what is bound to right now in KEYMAP.
-If KEYMAP is excluded, use `current-global-map'."
+If COMMAND is nil, use what is bound to BINDING right now in KEYMAP.
+If KEYMAP is nil, use `current-global-map'."
   (let* ((keymap (or keymap (current-global-map)))
          (command (or command
                       (lookup-key keymap (kbd binding))
