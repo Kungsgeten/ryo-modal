@@ -92,11 +92,16 @@ will be translated as well."
   (let* ((bindings nil))
     (map-keymap
      (lambda (ev def)
-       (push (list (key-description (vconcat (list ev)))
-                   (if (keymapp def)
-                       (ryo-modal--translate-keymap def)
-                     def))
-             bindings))
+       (let* ((key (key-description (vconcat (list ev))))
+              (extra nil)
+              (binding (cond
+                        ((keymapp def)
+                         (ryo-modal--translate-keymap def))
+                        ((consp def)
+                         (setq extra `(:name ,(car def)))
+                         (cdr def))
+                        (t def))))
+         (push `(,key ,binding ,@extra) bindings)))
      keymap)
     bindings))
 
