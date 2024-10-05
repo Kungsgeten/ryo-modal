@@ -185,8 +185,10 @@
   (rmt--with-clean-ryo-modal-mode-keymap
    (ryo-modal-key "A" 'rmt--mock-function-1 :name "cooler-function-name")
    (should (= (seq-length (cdr ryo-modal-mode-map)) 1))
-   (let ((bound-function (lookup-key ryo-modal-mode-map (kbd "A"))))
-     (should (string-match "^ryo:.*:cooler-function-name$" (symbol-name bound-function)))
+   (let* ((def (cadr ryo-modal-mode-map))
+          (bound-function (cddr def))
+          (description (cadr def)))
+     (should (equal description "cooler-function-name"))
      (rmt--expect-mock-calls
       '("mock-1")
       (call-interactively bound-function)))))
@@ -621,3 +623,17 @@
     ("H" rmt--dummy-function-6))
    (setq rhs ryo-modal-mode-map))
   (should (equal lhs rhs))))
+
+(ert-deftest rmt--ryo-modal-key--bind-keymap-with-menu-names ()
+  "smerge-basic-map contains names for bound keys"
+  (let* ((custom-map (define-keymap
+                       "a" #'rmt--dummy-function-1
+                       "b" (define-keymap
+                             "c" (cons "cool-name" #'rmt--dummy-function-2)
+                             "d" #'rmt--dummy-function-3)))
+         (expected-map (define-keymap
+                         "e" custom-map)))
+    (rmt--with-clean-ryo-modal-mode-keymap
+     (ryo-modal-keys
+      ("e" custom-map))
+     (should (equal ryo-modal-mode-map expected-map)))))

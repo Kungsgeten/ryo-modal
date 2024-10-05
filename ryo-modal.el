@@ -89,16 +89,21 @@ add :norepeat t as a keyword."
 
 If KEYMAP contains keybinding to other keymaps these inner keymaps
 will be translated as well."
-  (let* ((entries (cdr keymap))
-         (translate-entry
-          '(lambda (entry)
-             (let ((key (car entry))
-                   (binding (cdr entry)))
-             (list (key-description (vconcat (list key)))
-                   (if (keymapp binding)
-                       (ryo-modal--translate-keymap binding)
-                     binding))))))
-    (reverse (mapcar translate-entry entries))))
+  (let* ((bindings nil))
+    (map-keymap
+     (lambda (ev def)
+       (let* ((key (key-description (vconcat (list ev))))
+              (extra nil)
+              (binding (cond
+                        ((keymapp def)
+                         (ryo-modal--translate-keymap def))
+                        ((consp def)
+                         (setq extra `(:name ,(car def)))
+                         (cdr def))
+                        (t def))))
+         (push `(,key ,binding ,@extra) bindings)))
+     keymap)
+    bindings))
 
 ;;;###autoload
 (defun ryo-modal-key (key target &rest args)
@@ -173,11 +178,11 @@ make sure the name of the created command is unique."
                              ,@(cdr x)
                              ,@(org-plist-delete args :name))))
           target))
-   ((and (require 'hydra nil t)
-         (equal target :hydra))
+   ((and (equal target :hydra)
+         (require 'hydra nil t))
     (apply #'ryo-modal-key `(,key ,(eval `(defhydra ,@(car args))) ,@(cdr args))))
-   ((and (require 'hydra nil t)
-         (equal target :hydra+))
+   ((and (equal target :hydra+)
+         (require 'hydra nil t))
     (apply #'ryo-modal-key `(,key ,(eval `(defhydra+ ,@(car args))) ,@(cdr args))))
    ((and (stringp target) (keymapp (key-binding (kbd target))))
     (let* ((binding (key-binding (kbd target)))
@@ -193,10 +198,11 @@ make sure the name of the created command is unique."
    ((and (symbolp target) (not (functionp target)))
     (error "`%s' isn't a function" (symbol-name target)))
    (t
-    (let* ((name (or (plist-get args :name)
-                     (if (stringp target)
-                         target
-                       (symbol-name target))))
+    (let* ((name (plist-get args :name))
+           (func-name (or name
+                          (if (stringp target)
+                              target
+                            (symbol-name target))))
            (hash (secure-hash 'md5 (format "%s%s" target args)))
            (docs
             (if (stringp target)
@@ -217,7 +223,7 @@ make sure the name of the created command is unique."
                             (org-plist-delete :mc-all)
                             (org-plist-delete :name))
               (eval
-               `(defun ,(intern (concat "ryo:" hash ":" name)) ()
+               `(defun ,(intern (concat "ryo:" hash ":" func-name)) ()
                   ,docs
                   (interactive)
                   (dolist (f (quote ,(plist-get args :first)))
@@ -259,15 +265,16 @@ make sure the name of the created command is unique."
               (add-to-list 'mc/cmds-to-run-once func)
             (and (not (memq func mc/cmds-to-run-once))
                  (add-to-list 'mc/cmds-to-run-for-all func)))))
-      (if mode
-          (let ((map-name (format "ryo-%s-map" mode)))
-            (unless (intern-soft map-name)
-              (set (intern map-name) (make-sparse-keymap))
-              (set-keymap-parent (eval (intern map-name))
-                                 ryo-modal-mode-map)
-              (add-to-list 'ryo-modal-mode-keymaps mode))
-            (define-key (eval (intern map-name)) (kbd key) (cons name func)))
-        (define-key ryo-modal-mode-map (kbd key) (cons name func)))
+      (let ((key-def (if name (cons name func) func)))
+        (if mode
+            (let ((map-name (format "ryo-%s-map" mode)))
+              (unless (intern-soft map-name)
+                (set (intern map-name) (make-sparse-keymap))
+                (set-keymap-parent (eval (intern map-name))
+                                   ryo-modal-mode-map)
+                (add-to-list 'ryo-modal-mode-keymaps mode))
+              (define-key (eval (intern map-name)) (kbd key) key-def))
+          (define-key ryo-modal-mode-map (kbd key) key-def)))
       (when-let ((props (plist-get args :properties)))
         (mapcar
          (lambda (pair)
