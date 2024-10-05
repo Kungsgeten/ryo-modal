@@ -185,8 +185,10 @@
   (rmt--with-clean-ryo-modal-mode-keymap
    (ryo-modal-key "A" 'rmt--mock-function-1 :name "cooler-function-name")
    (should (= (seq-length (cdr ryo-modal-mode-map)) 1))
-   (let ((bound-function (lookup-key ryo-modal-mode-map (kbd "A"))))
-     (should (string-match "^ryo:.*:cooler-function-name$" (symbol-name bound-function)))
+   (let* ((def (cadr ryo-modal-mode-map))
+          (bound-function (cddr def))
+          (description (cadr def)))
+     (should (equal description "cooler-function-name"))
      (rmt--expect-mock-calls
       '("mock-1")
       (call-interactively bound-function)))))
